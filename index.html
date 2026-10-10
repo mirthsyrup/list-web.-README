@@ -21,9 +21,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const setStatus=(t)=>{status.textContent=t};
   try{
     setStatus('Загружаем Лист 2.7.10…');
-    const res=await fetch('list-site-2.7.10.zip?v=2710-6',{cache:'force-cache'});
-    if(!res.ok) throw new Error('Не удалось загрузить файлы сайта: HTTP '+res.status);
-    const zip=await JSZip.loadAsync(await res.arrayBuffer());
+    let zip,lastError;
+    for(let attempt=0;attempt<3;attempt++){
+      try{const res=await fetch('list-site-2.7.10-7.zip'+(attempt?'?retry='+Date.now():''),{cache:attempt?'reload':'default'});
+        if(!res.ok)throw new Error('HTTP '+res.status);
+        zip=await JSZip.loadAsync(await res.arrayBuffer());break;
+      }catch(err){lastError=err;setStatus('Повторяем загрузку…');if(attempt<2)await new Promise(r=>setTimeout(r,700));}
+    }
+    if(!zip)throw lastError;
     const prefix=zip.file('site/index.html')?'site/':'';
     const file=(p)=>zip.file(prefix+p);
     if(!file('index.html')) throw new Error('В архиве не найден index.html');
@@ -99,7 +104,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     document.open(); document.write(html); document.close();
   }catch(err){
     console.error(err);
-    status.innerHTML='<b>Не удалось открыть сайт.</b><br><span style="font-size:14px;opacity:.72">'+String(err&&err.message||err)+'</span>';
+    status.innerHTML='<b>Не удалось загрузить файлы сайта.</b><p>Проверь соединение и попробуй ещё раз.</p><button onclick="location.reload()" style="padding:12px 20px;border-radius:12px">Повторить</button>';
   }
 })();
 </script>
