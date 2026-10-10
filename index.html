@@ -21,7 +21,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const setStatus=(t)=>{status.textContent=t};
   try{
     setStatus('Загружаем Лист 2.7.10…');
-    const res=await fetch('list-site-2.7.10.zip?v=2710-3',{cache:'force-cache'});
+    const res=await fetch('list-site-2.7.10.zip?v=2710-4',{cache:'force-cache'});
     if(!res.ok) throw new Error('Не удалось загрузить файлы сайта: HTTP '+res.status);
     const zip=await JSZip.loadAsync(await res.arrayBuffer());
     const prefix=zip.file('site/index.html')?'site/':'';
