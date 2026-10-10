@@ -23,7 +23,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     setStatus('Загружаем Лист 2.7.10…');
     let zip,lastError;
     for(let attempt=0;attempt<3;attempt++){
-      try{const res=await fetch('list-site-2.7.10-7.zip'+(attempt?'?retry='+Date.now():''),{cache:attempt?'reload':'default'});
+      try{const res=await fetch('list-site-2.7.10-8.zip'+(attempt?'?retry='+Date.now():''),{cache:attempt?'reload':'default'});
         if(!res.ok)throw new Error('HTTP '+res.status);
         zip=await JSZip.loadAsync(await res.arrayBuffer());break;
       }catch(err){lastError=err;setStatus('Повторяем загрузку…');if(attempt<2)await new Promise(r=>setTimeout(r,700));}
