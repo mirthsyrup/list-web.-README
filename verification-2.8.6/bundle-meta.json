@@ -1,5 +1,6 @@
 {
-  "archive": "list-site-2.8.6.zip",
+  "archive": "list-site-2.8.6-r1.zip",
   "bytes": 11985678,
-  "sha256": "41109251801ec3d25dcb716feb513ae46609bcb5a68ecaf8e1247d7858137266"
+  "sha256": "41109251801ec3d25dcb716feb513ae46609bcb5a68ecaf8e1247d7858137266",
+  "gitBlobSHA": "f3bc541469858abea536f9160c7230c98f391380"
 }

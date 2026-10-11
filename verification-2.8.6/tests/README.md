@@ -15,9 +15,9 @@ A swatch board was inspected for palette harmony; it is not a browser screenshot
 From a checkout (Node 22+, Python 3):
 
 ```sh
-python -m zipfile -e list-site-2.8.6.zip verification-2.8.6
+python -m zipfile -e list-site-2.8.6-r1.zip verification-2.8.6
 cp index.html verification-2.8.6/root-index.html
-cp list-site-2.8.6.zip verification-2.8.6/list-site-2.8.6.zip
+cp list-site-2.8.6-r1.zip verification-2.8.6/list-site-2.8.6-r1.zip
 npm install --prefix verification-2.8.6/qa jsdom@26.1.0
 node --test verification-2.8.6/tests/*.test.cjs
 ```
