@@ -1,0 +1,154 @@
+{
+  "id": "331426a9-ddab-4ee5-94d4-fb34d4398ed2",
+  "name": "Проверка линчевателя",
+  "demo": false,
+  "level": 3,
+  "ancestry": "IiG7DgeLWYrSNXuX",
+  "heritage": "",
+  "background": "",
+  "classId": "9KiqZVG9r5g8mC4V",
+  "key": "dex",
+  "campaign": "",
+  "classChoices": {},
+  "levelProgress": {},
+  "boostProgress": {
+    "str": 0,
+    "dex": 0,
+    "con": 0,
+    "int": 0,
+    "wis": 0,
+    "cha": 0
+  },
+  "boosts": {
+    "ancestryMode": "standard",
+    "ancestryFlaws": [],
+    "ancestry": [
+      "dex",
+      "cha"
+    ],
+    "background": [
+      "dex",
+      "con"
+    ],
+    "free": [
+      "dex",
+      "con",
+      "wis",
+      "cha"
+    ]
+  },
+  "attributes": {
+    "str": 0,
+    "dex": 4,
+    "con": 2,
+    "int": 0,
+    "wis": 1,
+    "cha": 2
+  },
+  "skills": {
+    "deception": 1,
+    "acrobatics": 1,
+    "athletics": 1
+  },
+  "languages": [],
+  "lores": [],
+  "feats": [
+    "uqIiSDbv80TbRwTQ"
+  ],
+  "spells": [],
+  "inventory": [],
+  "hp": null,
+  "tempHp": 0,
+  "hero": 1,
+  "conditions": {},
+  "resources": [],
+  "slots": {},
+  "notes": "",
+  "coins": {
+    "gp": 15,
+    "sp": 0,
+    "cp": 0
+  },
+  "overrides": {},
+  "actions": 3,
+  "reaction": true,
+  "attacksThisTurn": 0,
+  "shieldRaised": false,
+  "panache": false,
+  "log": [],
+  "updatedAt": 1791720401148,
+  "schemaVersion": 2,
+  "portrait": "",
+  "portraitSource": "",
+  "portraitCrop": {
+    "zoom": 1,
+    "x": 0.5,
+    "y": 0.5
+  },
+  "sheetLayout": {
+    "order": [
+      "health",
+      "quick",
+      "attacks",
+      "resources",
+      "statuses",
+      "table"
+    ],
+    "collapsed": []
+  },
+  "magic": {
+    "mode": "manual",
+    "key": "",
+    "tradition": "",
+    "focus": {
+      "max": 0,
+      "value": 0
+    },
+    "prepared": [],
+    "repertoire": {},
+    "signature": [],
+    "innate": []
+  },
+  "effects": [],
+  "contacts": [],
+  "contactSections": [
+    {
+      "id": "contacts-1",
+      "name": "Подраздел 1"
+    },
+    {
+      "id": "contacts-2",
+      "name": "Подраздел 2"
+    }
+  ],
+  "journalSections": {
+    "quest": "Задачи",
+    "note": "Заметки",
+    "clue": "Зацепки",
+    "done": "Выполнено"
+  },
+  "abilityCollapsed": {
+    "choices": false,
+    "features": false
+  },
+  "rollHistory": [],
+  "journal": [],
+  "favorites": [],
+  "quickAccess": [],
+  "uiCampaign": "auto",
+  "session": {
+    "number": 1,
+    "turn": 0
+  },
+  "freeArchetype": {
+    "enabled": true,
+    "choices": {
+      "2": {
+        "id": "uqIiSDbv80TbRwTQ",
+        "override": false,
+        "reasons": []
+      }
+    }
+  },
+  "archetypeExceptions": {}
+}

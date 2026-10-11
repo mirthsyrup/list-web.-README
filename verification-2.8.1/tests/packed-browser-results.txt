@@ -1,0 +1,2 @@
+PASS browser: import, no owned search, paid continuation, independent free pick, apply, persistence on reload
+PASS standard action/reaction/free glyphs, accessible labels, long-title alignment, 320/390/1440 widths, light/dark, no JS errors
