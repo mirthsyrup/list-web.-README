@@ -1,0 +1,29 @@
+{
+  "version": {
+    "versionCode": 285,
+    "versionName": "2.8.6",
+    "package": "ru.seriylist.app"
+  },
+  "output_bytes": 12739474,
+  "output_sha256": "9fc99a8eece41a8f6138e7ecb5913e2d2c454a1334e2b59421cdb9eb4620e846",
+  "unsigned_payload_identical": true,
+  "stored_entries_alignment": {
+    "AndroidManifest.xml": 0,
+    "resources.arsc": 0
+  },
+  "only_added_zip_entries": [
+    "META-INF/LIST.RSA",
+    "META-INF/LIST.SF",
+    "META-INF/MANIFEST.MF"
+  ],
+  "web_files_match_current_site": true,
+  "same_signing_identity": true,
+  "device_install_tested": false,
+  "signature_verification": {
+    "v2": true,
+    "v3": true,
+    "same_certificate_as_2_8_5": true,
+    "certificate_sha256": "0ffae84ee9100edebce9e6fff096c8ef795cf0b1101b25112717c2baf0bef8a2",
+    "drive_readback_matches": true
+  }
+}
