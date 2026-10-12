@@ -27,13 +27,57 @@ function children(a,b,pool=new Map()){const previous=[...a.childNodes],used=new 
 function dispose(el){if(el.nodeType!==1)return;stop(el);const f=folds.get(el);if(f){f.cancel();if(el.tagName==='DETAILS')el.open=f.show;else el.hidden=!f.show;}for(const x of el.querySelectorAll('*')){stop(x);const f=folds.get(x);if(f){f.cancel();if(x.tagName==='DETAILS')x.open=f.show;else x.hidden=!f.show;}}}
 function template(html){const t=document.createElement('template');t.innerHTML=html;return t.content;}
 const moving='.sheet-block,.layout-row,.journal-entry,.contact-name,.quick-button,.ability-group,.item';
-function patch(el,html,{movingRows=true,lists=true}={}){if(!el)return;const focus=document.activeElement,before=movingRows?rectangles(moving,el):null,scroll=[el,...el.querySelectorAll('.modal,.tabs,.catalog-editions,.picker-list,.catalog-filter-body')].map(x=>[x,x.scrollTop,x.scrollLeft]);const pool=new Map([...el.querySelectorAll('.journal-entry,.contact-name')].map(x=>[key(x),x]));pool.animateLists=lists;children(el,typeof html==='string'?template(html):html,pool);prepare(el);if(focus?.isConnected&&document.activeElement!==focus)focus.focus({preventScroll:true});for(const [x,top,left]of scroll){x.scrollTop=top;x.scrollLeft=left;}if(before)move(before,moving,el);for(const old of pool.values())if(!old.isConnected)dispose(old);}
+function patch(el,html,{movingRows=true,lists=true}={}){if(!el)return;if(sheetFold&&el.contains(sheetFold.el))sheetFold.finish();const focus=document.activeElement,before=movingRows?rectangles(moving,el):null,scroll=[el,...el.querySelectorAll('.modal,.tabs,.catalog-editions,.picker-list,.catalog-filter-body')].map(x=>[x,x.scrollTop,x.scrollLeft]);const pool=new Map([...el.querySelectorAll('.journal-entry,.contact-name')].map(x=>[key(x),x]));pool.animateLists=lists;children(el,typeof html==='string'?template(html):html,pool);prepare(el);if(focus?.isConnected&&document.activeElement!==focus)focus.focus({preventScroll:true});for(const [x,top,left]of scroll){x.scrollTop=top;x.scrollLeft=left;}if(before)move(before,moving,el);for(const old of pool.values())if(!old.isConnected)dispose(old);}
 // Content stays visible. Ordinary updates never fade a page or result list.
 function list(el,html){if(!el||el.innerHTML===html)return;patch(el,html,{movingRows:false,lists:false});}
 function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});}
 function rectangles(selector,scope=document){const out=new Map();if(reduced())return out;for(const el of scope.querySelectorAll(selector)){if(el.parentElement?.closest(selector)&&scope.contains(el.parentElement.closest(selector)))continue;const k=key(el),r=el.getBoundingClientRect();if(k&&r.height&&r.bottom>0&&r.top<root.innerHeight)out.set(k,r);}return out;}
-function move(before,selector,scope=document){if(reduced())return;for(const el of scope.querySelectorAll(selector)){const old=before?.get(key(el));if(!old||!el.animate)continue;stop(el);const r=el.getBoundingClientRect(),dx=old.left-r.left,dy=old.top-r.top;if(Math.abs(dx)+Math.abs(dy)<1)continue;let a;const state=own(el,()=>a?.cancel());a=el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:200,easing:ease});active.add(a);a.finished.catch(()=>{}).then(()=>{active.delete(a);if(states.get(el)===state)states.delete(el);});}}
-function fold(el,show,onDone){if(!el)return;const prior=folds.get(el),from=el.getBoundingClientRect().height;const opacity=root.getComputedStyle(el).opacity;prior?.cancel();el.dataset.motionOpen=String(show);el.dispatchEvent(new CustomEvent('list-fold',{bubbles:true,detail:{open:show}}));if(el.tagName==='DETAILS')el.open=true;else el.hidden=false;
+function move(before,selector,scope=document){if(reduced())return;const nodes=[...scope.querySelectorAll(selector)].filter(el=>before?.has(key(el))&&el.animate);for(const el of nodes)stop(el);const moves=nodes.map(el=>{const old=before.get(key(el)),r=el.getBoundingClientRect();return {el,dx:old.left-r.left,dy:old.top-r.top};});for(const {el,dx,dy}of moves){if(Math.abs(dx)+Math.abs(dy)<1)continue;let a;const state=own(el,()=>{a?.cancel();active.delete(a);});a=el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:200,easing:ease});active.add(a);a.finished.catch(()=>{}).then(()=>{active.delete(a);if(states.get(el)===state)states.delete(el);});}}
+// Ability blocks have transparent, vertical block layout. Keep that layout stable
+// while clipping the group and translating its followers; never scale its text.
+// The shell translation compensates a shrinking scroll range at the page bottom.
+let sheetFold=null;
+function sheetFollowers(el,shell){const out=[];for(let node=el;node&&node!==shell;node=node.parentElement)for(let next=node.nextElementSibling;next;next=next.nextElementSibling)out.push(next);return out;}
+function progress(a){return a?.effect?.getComputedTiming?.().progress??0;}
+function foldAbility(el,show,onDone){
+ const details=el.tagName==='DETAILS',shell=el.closest('.shell'),summary=details?el.querySelector(':scope > summary'):null;
+ const supported=el.matches('.ability-group')&&el.closest('#ability-results')||el.matches('#ability-features.ability-block-body,#ability-choices.ability-block-body');
+ if(!supported||!shell||(details&&!summary)||reduced()||!el.animate)return false;
+ const prior=folds.get(el),from=prior?.visibleHeight?.()??el.getBoundingClientRect().height,shellFrom=prior?.shellOffset?.()??0;
+ const followers=sheetFollowers(el,shell),before=followers.map(node=>node.getBoundingClientRect());
+ prior?.cancel();for(const node of followers)stop(node);
+ const savedOverflow=el.style.overflow,savedAnchor=shell.style.overflowAnchor,scrollStart=root.scrollY||0;
+ shell.style.overflowAnchor='none';if(details)el.open=true;else el.hidden=false;
+ const expanded=el.getBoundingClientRect().height,after=followers.map(node=>node.getBoundingClientRect());
+ let end=expanded,scrollEnd=scrollStart,targets=followers.map(()=>0);
+ if(!show){
+  // Measure final flow once: hiding a block can also collapse its neighbours'
+  // margins. Its box height alone is not the distance those neighbours move.
+  if(details)el.open=false;else el.hidden=true;
+  end=el.getBoundingClientRect().height;
+  const final=followers.map(node=>node.getBoundingClientRect()),finalScroll=root.scrollY||0;
+  scrollEnd=Math.min(scrollStart,Math.max(0,document.documentElement.scrollHeight-root.innerHeight));
+  targets=final.map((r,i)=>r.top+finalScroll-after[i].top-scrollStart);
+  if(details)el.open=true;else el.hidden=false;
+  // The measurement may have clamped the viewport. Restore it before painting.
+  if(finalScroll!==scrollStart)root.scrollTo({left:root.scrollX,top:scrollStart,behavior:'instant'});
+ }
+ const shellEnd=scrollStart-scrollEnd;
+ const duration=Math.min(300,Math.max(190,190+Math.abs(end-from)*.06)),options={duration,easing:ease,fill:'both'},animations=[];
+ el.style.overflow='hidden';
+ const clip=el.animate([{clipPath:`inset(0 0 ${expanded-from}px 0)`},{clipPath:`inset(0 0 ${expanded-end}px 0)`}],options);animations.push(clip);
+ // Read all rectangles before starting animations, avoiding per-row layout flushes.
+ followers.forEach((node,i)=>{const dy=before[i].top-after[i].top-shellFrom,target=targets[i];if(!node.animate||(!after[i].height&&!before[i].height)||Math.abs(dy)+Math.abs(target)<.5)return;animations.push(node.animate([{transform:`translateY(${dy}px)`},{transform:`translateY(${target}px)`}],options));});
+ let shellAnimation;if(Math.abs(shellFrom)+Math.abs(shellEnd)>.5){shellAnimation=shell.animate([{transform:`translateY(${shellFrom}px)`},{transform:`translateY(${shellEnd}px)`}],options);animations.push(shellAnimation);}
+ const s={el,show,scrollStart,visibleHeight:()=>from+(end-from)*progress(clip),shellOffset:()=>shellFrom+(shellEnd-shellFrom)*progress(shellAnimation),cancel(){for(const a of animations){a.cancel();active.delete(a);}el.style.overflow=savedOverflow;shell.style.overflowAnchor=savedAnchor;folds.delete(el);if(sheetFold===s)sheetFold=null;},finish(userScrolled=false){const top=userScrolled?root.scrollY:scrollEnd;s.cancel();if(details)el.open=show;else el.hidden=!show;if(shellEnd||userScrolled)root.scrollTo({left:root.scrollX,top,behavior:'instant'});onDone?.();}};
+ folds.set(el,s);sheetFold=s;animations.forEach(a=>active.add(a));
+ el.dataset.motionOpen=String(show);el.dispatchEvent(new CustomEvent('list-fold',{bubbles:true,detail:{open:show}}));
+ Promise.all(animations.map(a=>a.finished.catch(()=>{}))).then(()=>{if(folds.get(el)===s)s.finish();});return true;
+}
+// A scrollTo from the previous fold may dispatch after a new fold has started.
+root.addEventListener('scroll',()=>{if(sheetFold&&Math.abs((root.scrollY||0)-sheetFold.scrollStart)>.5)sheetFold.finish(true);},{passive:true});
+root.addEventListener('resize',()=>sheetFold?.finish(true),{passive:true});
+function fold(el,show,onDone){if(!el)return;if(sheetFold&&sheetFold.el!==el)sheetFold.finish();if(foldAbility(el,show,onDone))return;const prior=folds.get(el),from=el.getBoundingClientRect().height;const opacity=root.getComputedStyle(el).opacity;prior?.cancel();el.dataset.motionOpen=String(show);el.dispatchEvent(new CustomEvent('list-fold',{bubbles:true,detail:{open:show}}));if(el.tagName==='DETAILS')el.open=true;else el.hidden=false;
  if(reduced()||!el.animate){if(el.tagName==='DETAILS')el.open=show;else el.hidden=!show;onDone?.();return;}
  const summary=el.tagName==='DETAILS'?el.querySelector(':scope > summary'):null,end=show?el.getBoundingClientRect().height:summary?(()=>{el.open=false;const h=el.getBoundingClientRect().height;el.open=true;return h;})():0;
  const saved={height:el.style.height,overflow:el.style.overflow,marginBottom:el.style.marginBottom,paddingTop:el.style.paddingTop,paddingBottom:el.style.paddingBottom};let a;const s={show,cancel(){a?.cancel();Object.assign(el.style,saved);folds.delete(el);}};folds.set(el,s);el.style.overflow='hidden';

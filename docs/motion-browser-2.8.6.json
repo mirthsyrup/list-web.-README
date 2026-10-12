@@ -1,0 +1,296 @@
+{
+  "passed": true,
+  "limitation": "Chromium layout regression and relative work counters; not device FPS, Safari/WKWebView or Android native verification.",
+  "results": [
+    {
+      "variant": "before",
+      "counters": {
+        "LayoutCount": 109,
+        "LayoutDuration": 0.026539,
+        "RecalcStyleCount": 121,
+        "RecalcStyleDuration": 0.068913,
+        "TaskDuration": 0.7169490000000001
+      },
+      "paths": [
+        [
+          [
+            "height"
+          ]
+        ],
+        [
+          [
+            "height"
+          ]
+        ],
+        [
+          [
+            "height"
+          ]
+        ],
+        [
+          [
+            "height"
+          ]
+        ],
+        [
+          [
+            "height"
+          ]
+        ],
+        [
+          [
+            "height"
+          ]
+        ]
+      ],
+      "reversal": {
+        "open": false,
+        "sameCard": true,
+        "style": "",
+        "scroll": 810
+      },
+      "bottom": {
+        "before": 2270,
+        "after": 2183,
+        "max": 2183,
+        "open": false,
+        "style": "",
+        "overflow": false
+      },
+      "endpoints": [
+        {
+          "selector": ".ability-group",
+          "show": false,
+          "before": [
+            326.9375,
+            405.9375
+          ],
+          "after": [
+            326.9375,
+            405.9375
+          ],
+          "open": false
+        },
+        {
+          "selector": ".ability-group",
+          "show": true,
+          "before": [
+            326.9375,
+            2005.359375
+          ],
+          "after": [
+            326.9375,
+            2005.359375
+          ],
+          "open": true
+        },
+        {
+          "selector": "#ability-choices",
+          "show": false,
+          "before": [
+            -1466,
+            -1387
+          ],
+          "after": [
+            -1454,
+            -1387
+          ],
+          "open": false
+        },
+        {
+          "selector": "#ability-choices",
+          "show": true,
+          "before": [
+            -1546,
+            -1387.0625
+          ],
+          "after": [
+            -1546,
+            -1387.0625
+          ],
+          "open": true
+        },
+        {
+          "selector": "#ability-features",
+          "show": false,
+          "before": [
+            428.9375,
+            507.9375
+          ],
+          "after": [
+            440.9375,
+            507.9375
+          ],
+          "open": false
+        },
+        {
+          "selector": "#ability-features",
+          "show": true,
+          "before": [
+            440.9375,
+            2335.359375
+          ],
+          "after": [
+            440.9375,
+            2335.359375
+          ],
+          "open": true
+        }
+      ],
+      "checks": [
+        "rapid reversal and card identity",
+        "bottom scroll range and endpoint continuity",
+        "whole ability block collapse",
+        "scene change cancels animations",
+        "reduced motion",
+        "no JavaScript errors"
+      ],
+      "errors": []
+    },
+    {
+      "variant": "after",
+      "counters": {
+        "LayoutCount": 21,
+        "LayoutDuration": 0.027201,
+        "RecalcStyleCount": 78,
+        "RecalcStyleDuration": 0.0238,
+        "TaskDuration": 0.338875
+      },
+      "paths": [
+        [
+          [
+            "clipPath"
+          ]
+        ],
+        [
+          [
+            "clipPath"
+          ]
+        ],
+        [
+          [
+            "clipPath"
+          ]
+        ],
+        [
+          [
+            "clipPath"
+          ]
+        ],
+        [
+          [
+            "clipPath"
+          ]
+        ],
+        [
+          [
+            "clipPath"
+          ]
+        ]
+      ],
+      "reversal": {
+        "open": false,
+        "sameCard": true,
+        "style": "",
+        "scroll": 810
+      },
+      "bottom": {
+        "before": 2270,
+        "after": 2183,
+        "max": 2183,
+        "open": false,
+        "style": "",
+        "overflow": false
+      },
+      "endpoints": [
+        {
+          "selector": ".ability-group",
+          "show": false,
+          "before": [
+            326.9375,
+            405.9375
+          ],
+          "after": [
+            326.9375,
+            405.9375
+          ],
+          "open": false
+        },
+        {
+          "selector": ".ability-group",
+          "show": true,
+          "before": [
+            326.9375,
+            2005.359375
+          ],
+          "after": [
+            326.9375,
+            2005.359375
+          ],
+          "open": true
+        },
+        {
+          "selector": "#ability-choices",
+          "show": false,
+          "before": [
+            -1454,
+            -1387
+          ],
+          "after": [
+            -1454,
+            -1387
+          ],
+          "open": false
+        },
+        {
+          "selector": "#ability-choices",
+          "show": true,
+          "before": [
+            -1454,
+            -1295.0625
+          ],
+          "after": [
+            -1454,
+            -1295.0625
+          ],
+          "open": true
+        },
+        {
+          "selector": "#ability-features",
+          "show": false,
+          "before": [
+            440.9375,
+            507.9375
+          ],
+          "after": [
+            440.9375,
+            507.9375
+          ],
+          "open": false
+        },
+        {
+          "selector": "#ability-features",
+          "show": true,
+          "before": [
+            440.9375,
+            2335.359375
+          ],
+          "after": [
+            440.9375,
+            2335.359375
+          ],
+          "open": true
+        }
+      ],
+      "checks": [
+        "rapid reversal and card identity",
+        "bottom scroll range and endpoint continuity",
+        "whole ability block collapse",
+        "scene change cancels animations",
+        "reduced motion",
+        "no JavaScript errors"
+      ],
+      "errors": []
+    }
+  ]
+}
