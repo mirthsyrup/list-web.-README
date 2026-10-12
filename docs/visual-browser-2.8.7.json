@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "layouts": [
+    {
+      "width": 320,
+      "markerMatchesButton": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 390,
+      "markerMatchesButton": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 1280,
+      "markerMatchesButton": true,
+      "noHorizontalOverflow": true
+    }
+  ],
+  "idleSheetLayouts": 0,
+  "checks": [
+    "typed input unchanged",
+    "keyboard action and HP persistence",
+    "roll total stays exact",
+    "decorations hidden from accessibility tree",
+    "pointer feedback cleans up",
+    "light and dark layouts",
+    "navigation indicator aligns after resize",
+    "reduced motion stops decorative motion",
+    "visibility event clears overlays"
+  ],
+  "errors": [],
+  "limitation": "Chromium with local HTTP; hardware Safari/Android execution and actual device FPS not measured."
+}

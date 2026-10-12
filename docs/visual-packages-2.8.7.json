@@ -1,0 +1,23 @@
+{
+  "version": {
+    "versionCode": 286,
+    "versionName": "2.8.7",
+    "package": "ru.seriylist.app"
+  },
+  "signed_apk_sha256": "ae2ae3ab739a169dbb8dff503edecf09b90d0665a5f6924071361034b78ba69c",
+  "signed_apk_bytes": 12747802,
+  "same_android_signing_certificate": "0ffae84ee9100edebce9e6fff096c8ef795cf0b1101b25112717c2baf0bef8a2",
+  "verified_signature_schemes": [
+    "V2",
+    "V3"
+  ],
+  "stored_alignment": {
+    "AndroidManifest.xml": 0,
+    "resources.arsc": 0
+  },
+  "android_native_dex_unchanged": true,
+  "ios_native_executable_unchanged": true,
+  "web_files_match_site": true,
+  "source_files": 60,
+  "physical_device_tested": false
+}
