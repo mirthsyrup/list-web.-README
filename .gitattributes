@@ -1,0 +1,2 @@
+# Preserve license documents exactly as supplied in the release archive.
+site/legal/* -whitespace

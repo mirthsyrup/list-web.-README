@@ -1,0 +1,16 @@
+node_modules/
+qa/
+out/
+build/
+__pycache__/
+*.pyc
+*.apk
+*.ipa
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+.env
+.env.*
+.DS_Store
+ipa-browser-results.json

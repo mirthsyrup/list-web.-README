@@ -1,0 +1,10 @@
+/* Offline search and photo geometry; no rules changes or random rolls. */
+(function(root){'use strict';
+const norm=s=>String(s??'').toLocaleLowerCase('ru').replaceAll('ё','е').replace(/[^\p{L}\p{N}]+/gu,' ').trim().replace(/\s+/g,' ');
+const common={'force-barrage':['магическая стрела','магические стрелы','magic missile','мм'],'magic-missile':['шквал силы','мм'],'fireball':['фаербол','файербол','фб'],'reactive-strike':['атака по возможности','attack of opportunity','аоо','aoo'],'attack-of-opportunity':['реактивный удар','аоо','aoo'],'heal':['хил','хилка'],'magic-weapon':['магическое оружие'],'runic-weapon':['магическое оружие','magic weapon'],'off-guard':['застигнут врасплох','flat footed']};
+let cache=new WeakMap();
+function matches(d,query,aliases=root.LIST_SEARCH_ALIASES||{}){const q=norm(query);if(!q)return true;if(!d)return false;let record=cache.get(d);if(!record||record.aliases!==aliases){const fields=[d.name,d.slug,...(aliases[d.id]||[]),...(common[d.slug]||[])].filter(Boolean).map(norm);record={aliases,fields};cache.set(d,record);}const tokens=q.split(' ');return record.fields.some(field=>field.includes(q)||tokens.every(t=>field.split(' ').some(w=>w.startsWith(t))));}
+function cropRect(width,height,zoom=1,x=.5,y=.5){if(!(width>0&&height>0))throw Error('Invalid image');zoom=Math.max(1,Math.min(4,Number(zoom)||1));x=Math.max(0,Math.min(1,Number(x)||0));y=Math.max(0,Math.min(1,Number(y)||0));const side=Math.min(width,height)/zoom;return{x:(width-side)*x,y:(height-side)*y,width:side,height:side};}
+function descriptionBody(text,d,usage){const represented=new Map((usage||[]).map(x=>[x.label,norm(x.value)])),labelMap={'Сотворение':'Действия'};return String(text??'').split('\n').filter(line=>{if(line.trim().toLowerCase()==='связанное правило')return false;const m=line.trim().match(/^([^:]+):\s*(.+)$/);return !m||represented.get(labelMap[m[1]]||m[1])!==norm(m[2]);}).join('\n');}
+const api={norm,matches,cropRect,descriptionBody};root.ListComfortTools=api;if(typeof module!=='undefined')module.exports=api;
+})(typeof window!=='undefined'?window:globalThis);

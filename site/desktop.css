@@ -1,0 +1,72 @@
+/* Лист 2.7.8 · desktop web edition.
+   The mobile application styles remain untouched below 1000px. */
+@media (min-width:1000px){
+  body{min-height:100vh}
+  #app{margin-left:218px;min-height:100vh}
+  .shell{max-width:1320px;margin:0 auto;padding:0 38px 64px}
+  .topbar{height:88px;margin-bottom:30px}
+
+  .nav{
+    left:22px;right:auto;top:92px;bottom:auto;
+    width:178px;padding:10px;
+    border:1px solid var(--border-subtle);border-radius:22px;
+    background:var(--nav);box-shadow:0 12px 36px rgba(0,0,0,.06);
+    -webkit-backdrop-filter:blur(22px) saturate(115%);
+    backdrop-filter:blur(22px) saturate(115%)
+  }
+  .nav-inner{max-width:none;display:grid;grid-template-columns:1fr;gap:5px}
+  .nav button{
+    min-height:50px;flex-direction:row;justify-content:flex-start;gap:11px;
+    padding:0 13px;font-size:13px;text-align:left;border-radius:14px
+  }
+  .nav button .icon{width:20px;height:20px}
+  .nav button.on{background:var(--soft);color:var(--pink)}
+
+  .combat{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:30px}
+  .health-layout{grid-template-columns:minmax(250px,1.12fr) minmax(225px,1fr);gap:13px}
+  .stats{gap:11px}
+  .saves{gap:11px}
+  .hero{margin-bottom:28px}
+  .hero-name .avatar{width:68px;height:68px;border-radius:19px}
+  .hero-name{gap:15px}
+  .hero-name h1{font-size:36px}
+  .level{width:56px;min-height:56px;border-radius:17px}
+  .level b{font-size:24px}
+
+  .tabs{flex-wrap:wrap;overflow:visible;padding-bottom:4px}
+  .catalog-editions{margin-top:2px}
+  .search{max-width:820px}
+  .intro{max-width:720px;margin-top:70px}
+  .intro>p{max-width:510px}
+  .wizard{max-width:860px}
+  .modal{max-width:760px}
+  #toast{left:calc(50% + 109px);bottom:28px}
+}
+
+@media (min-width:1450px){
+  #app{margin-left:232px}
+  .nav{left:30px;width:184px}
+  .shell{max-width:1420px;padding-left:48px;padding-right:48px}
+  .combat{grid-template-columns:minmax(0,.98fr) minmax(0,1.02fr);gap:36px}
+  .health-layout{grid-template-columns:minmax(280px,1.16fr) minmax(245px,1fr)}
+  #toast{left:calc(50% + 116px)}
+}
+
+/* Desktop uses dedicated wide 4K paper artwork.
+   Mobile paper assets are never stretched on wide screens. */
+@media (min-width:1000px){
+  :root{--paper-desktop:url("assets/paper-dark-desktop.jpg")}
+  :root[data-theme=light]{--paper-desktop:url("assets/paper-light-desktop.jpg")}
+  body:after{
+    background-image:linear-gradient(var(--paper-wash),var(--paper-wash)),var(--paper-desktop);
+    background-size:cover;
+    background-position:center center;
+    background-repeat:no-repeat
+  }
+  .modal{
+    background-image:linear-gradient(var(--modal-wash),var(--modal-wash)),var(--paper-desktop);
+    background-size:cover;
+    background-position:center center;
+    background-repeat:no-repeat
+  }
+}
