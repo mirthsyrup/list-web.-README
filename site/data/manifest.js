@@ -1,0 +1,1 @@
+window.CATALOG_META={"version": 1, "built": "2026-10-03", "counts": {"ancestries": 50, "backgrounds": 502, "classes": 29, "heritages": 328, "feats": 6283, "spells": 1975, "equipment": 5856, "class-features": 874, "ancestry-features": 55, "conditions": 43, "actions": 574}, "missingTranslations": {"backgrounds": 18, "spells": 18, "equipment": 13}, "total": 16569};

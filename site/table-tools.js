@@ -1,0 +1,48 @@
+/* Pure display models for an offline table: no random rolls, no character mutation. */
+(function(root){'use strict';
+const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s).toLocaleLowerCase('ru').replaceAll('ё','е');
+function loreSubject(name){return String(name??'').trim().replace(/^(?:(?:Лор|Знания)\s*:\s*|Знания\s+)+/iu,'').replace(/\s+знания$/iu,'').trim();}
+function sessionEvents(entries){const routine=/^(?:(?:(?:Начало|Конец) хода|Новый ход)(?=[: ·]|$)|(?:Урон|Критический урон) .+:)/iu;const check=/^.+:\s*[+−-]?\d+\s*\(\d+\s+[+−-]\d+\)/u,dice=/^\d+к\d+[+−-]\d+\s*=/u;return (entries||[]).filter(x=>!routine.test(x.text)&&!check.test(x.text)&&!dice.test(x.text));}
+const glossary={dc:['КС','Класс сложности — число, с которым сравнивают итог проверки.'],map:['Штраф многократной атаки','Штраф к последующим атакам в один ход. Значение оружия в листе учитывает текущий счётчик атак и свойство «Быстрое».'],lore:['Лор','Отдельный навык с выбранной специализацией. Его обучение хранится отдельно от остальных навыков.'],status:['Бонус состояния','Бонусы одного типа не складываются: используется наибольший бонус. Штрафы того же типа также используют самое низкое значение.'],circumstance:['Бонус обстоятельства','Бонусы одного типа не складываются: используется наибольший бонус. Штрафы того же типа также используют самое низкое значение.'],item:['Бонус предмета','Бонусы одного типа не складываются: используется наибольший бонус. Штрафы того же типа также используют самое низкое значение.']};
+let cacheRules=null,starts=new Map();
+const word=c=>/[\p{L}\p{N}_]/u.test(c||'');
+function richText(text,{R,traits={},db={},exclude=''}={}){
+ if(R!==cacheRules){const names=new Map(),add=(name,action,data)=>{if(!name||(name.length<3&&name!=='КС'))return;const k=norm(name);if(!names.has(k))names.set(k,{name,action,data});};
+ for(const [k,v]of Object.entries(R?.CONDITIONS||{})){add(v[0],'rule-condition',k);if(['frightened','enfeebled','stupefied','drained','slowed','stunned','wounded','grabbed'].includes(k))for(const suffix of ['а','о','ы','ным','ной','ного','ных','ному'])add(v[0]+suffix,'rule-condition',k);}
+
+ for(const [k,v]of Object.entries(glossary))add(v[0],'rule-glossary',k);
+ starts=new Map();for(const [key,t]of names){const first=key.match(/[а-яёa-z0-9]+/u)?.[0];if(!first||!key.startsWith(first))continue;const list=starts.get(first)||[];list.push({...t,key});starts.set(first,list);}for(const list of starts.values())list.sort((a,b)=>b.key.length-a.key.length);cacheRules=R;}
+
+ // Each source substring is escaped once. Never inject catalogue HTML.
+ const raw=String(text??'');let ranges=[];
+ const mechanical=/(?:[+−–-]\s*\d+(?:\s+(?:(?:бонус[а-яё]*|штраф[а-яё]*)(?:\s+(?:обстоятельств[а-яё]*|состояни[а-яё]*|предмет[а-яё]*))?\s+)?(?:к|на)\s+[^.\n;]{1,85})?)|(?:КС(?:\s*\d+)?)|(?:\d*\s*[кd]\d+(?:\s*[+−-]\s*\d+)?)|(?:(?:бонус|штраф)[а-яё]*\s+[+−–-]?\s*\d+)|(?:урон(?:а|у|ом|е)?)/giu;
+ for(const m of raw.matchAll(mechanical))if(!word(raw[m.index-1])&&!word(raw[m.index+m[0].length]))ranges.push([m.index,m.index+m[0].length,'rule-mechanic']);
+ for(const m of raw.matchAll(/(?:Критический (?:успех|провал)|Успех|Провал|Усиление(?: \(\+\d+\))?):/giu))ranges.push([m.index,m.index+m[0].length,'rule-outcome']);ranges.sort((a,b)=>a[0]-b[0]);
+ function segment(s,offset=0){let html='',last=0;const lower=norm(s);for(const m of lower.matchAll(/[а-яёa-z0-9]+/gu)){if(m.index<last||word(raw[offset+m.index-1]))continue;const t=(starts.get(m[0])||[]).find(t=>lower.slice(m.index,m.index+t.key.length)===t.key&&!word(raw[offset+m.index+t.key.length]));if(!t)continue;const value=s.slice(m.index,m.index+t.key.length),own=t.action==='rule-reference'&&norm(db[exclude]?.name||'')===norm(value);html+=escape(s.slice(last,m.index));if(!own){const attr=t.action==='trait'?'tag':t.action==='rule-condition'?'key':t.action==='rule-reference'?'name':'key';html+=`<button class="rule-link" data-action="${t.action}" data-${attr}="${escape(t.data)}">${escape(value)}</button>`;}else html+=escape(value);last=m.index+t.key.length;}return html+escape(s.slice(last));}
+
+ let html='',pos=0;for(const [a,b,cls]of ranges){if(a<pos)continue;html+=segment(raw.slice(pos,a),pos)+`<strong class="${cls}">${segment(raw.slice(a,b),a)}</strong>`;pos=b;}return html+segment(raw.slice(pos),pos);
+}
+function explain(R,c,db,key,uid){const a=R.calculate(c,db),parts=[],add=(label,value)=>{if(value||!parts.length)parts.push({label,value:Number(value)||0});};let total,title;
+ const armor=c.inventory.find(x=>x.equipped&&db[x.id]?.type==='armor'),am=db[armor?.id]?.mechanics||{};
+ if(key==='ac'){title='Класс брони';total=a.ac;add('Базовое значение',10);add('Ловкость с пределом доспеха',Math.min(c.attributes.dex,typeof am.dexCap==='number'?am.dexCap:99));add('Мастерство · '+R.RANKS[a.ranks[a.armorCat]||0],R.prof(c.level,a.ranks[a.armorCat]||0));add('Доспех и руна мощи',(am.acBonus||0)+Math.max(am.runes?.potency||0,armor?.potency||0));add('Ручная поправка',c.overrides.ac);}
+ else if(key==='hp'){title='Максимум ОЗ';total=a.maxHp;add('Родословная',db[c.ancestry]?.mechanics?.hp||8);add('Класс · '+c.level+' уровней',c.level*(db[c.classId]?.mechanics?.hp||8));add('Телосложение · '+c.level+' уровней',c.level*c.attributes.con);add('Живучесть',R.features(c,db).some(x=>x.slug==='toughness')?c.level:0);add('Ручная поправка',c.overrides.hp);}
+ else if(key==='speed'){title='Скорость';const speed=R.speedDetails(c,db);total=speed.total;for(const x of speed.parts)add(x.label,x.value);}
+ else if(key==='attack'){const item=c.inventory.find(x=>x.uid===uid);if(!item||db[item.id]?.type!=='weapon')return null;const s=R.strike(c,item,db),m=db[item.id].mechanics||{},tags=db[item.id].tags||[],stat=m.range?'dex':tags.includes('finesse')&&c.attributes.dex>c.attributes.str?'dex':'str';title='Атака · '+db[item.id].name;total=s.bonus;add(R.ATTRS[stat],c.attributes[stat]);add('Мастерство',R.prof(c.level,a.ranks[m.category]||0));add('Руна мощи',Math.max(m.runes?.potency||0,item.potency||0));add('Штраф многократной атаки',-s.map);add('Ручная поправка оружия',item.attackBonus);}
+ else {let stat,rank,override=0;
+ if(key==='perception'){title='Восприятие';total=a.perception;stat='wis';rank=a.ranks.perception;override=c.overrides.perception;}
+ else if(['fortitude','reflex','will'].includes(key)){title={fortitude:'Стойкость',reflex:'Рефлекс',will:'Воля'}[key];total=a.saves[key];stat={fortitude:'con',reflex:'dex',will:'wis'}[key];rank=a.ranks[key];override=c.overrides[key];}
+ else if(key==='spellDC'||key==='spellAttack'||key==='classDC'){title={spellDC:'КС заклинаний',spellAttack:'Атака заклинанием',classDC:'КС класса'}[key];total=a[key];if(key==='spellAttack')total-=Math.min(c.attacksThisTurn,2)*5;stat=key==='classDC'?c.key:c.magic?.key||c.key;rank=a.ranks[key==='classDC'?'classDC':'spellcasting'];if(key!=='spellAttack')add('Базовое значение',10);override=key==='spellDC'?c.overrides.spellDC:0;}
+ else if(key.startsWith('lore:')){const i=+key.slice(5),l=c.lores[i];if(!l)return null;title='Лор: '+loreSubject(l.name);total=a.loreBonuses[i];stat='int';rank=l.rank;}
+ else if(R.SKILLS[key]){title=R.SKILLS[key][0];total=a.skills[key];stat=R.SKILLS[key][1];rank=a.skillRanks[key];override=c.overrides.skills?.[key];}
+ else return null;
+ add(R.ATTRS[stat],c.attributes[stat]);add('Мастерство · '+R.RANKS[rank||0],R.prof(c.level,rank||0));add('Ручная поправка',override);if(key==='spellAttack')add('Штраф многократной атаки',-Math.min(c.attacksThisTurn,2)*5);}
+ const rest=total-parts.reduce((sum,p)=>sum+p.value,0);if(rest)add('Состояния, эффекты и особенности',rest);
+ const context=Object.entries(c.conditions).filter(([,n])=>n).map(([k,n])=>({name:R.CONDITIONS[k][0]+(R.CONDITIONS[k][2]?' '+n:''),action:'rule-condition',key:k}));if(c.shieldRaised)context.push({name:'Щит поднят · бонус обстоятельства +2'});
+ for(const e of c.effects||[])if(e.active&&e.rounds!==0)context.push({name:e.name+' · '+e.modifiers.map(m=>(R.EFFECT_TARGETS[m.target]||m.target)+' '+R.signed(m.value)+' ('+R.MODIFIER_TYPES[m.type]+')').join(', '),action:'effect-edit',id:e.id});
+ return{title,total,parts,context};
+}
+function damageFormula(R,c,item,db,critical=false){const s=R.strike(c,item,db);return `${critical?'2 × (':''}${s.dice}к${critical&&s.fatal?s.fatal:s.die}${R.signed(s.damageBonus)}${critical?')':''}${critical&&s.deadly?' + '+Math.max(1,s.striking)+'к'+s.deadly:''}${critical&&s.fatal?' + 1к'+s.fatal:''}`;}
+function changeLabel(before,after){if(JSON.stringify(before.sheetLayout)!==JSON.stringify(after.sheetLayout))return 'Блоки главного листа';if(JSON.stringify(before.inventory)!==JSON.stringify(after.inventory))return 'Предметы в рюкзаке';if(before.hp!==after.hp||before.tempHp!==after.tempHp)return 'Здоровье';if(JSON.stringify(before.conditions)!==JSON.stringify(after.conditions))return 'Состояния';if(JSON.stringify(before.effects)!==JSON.stringify(after.effects))return 'Эффекты';if(before.attacksThisTurn!==after.attacksThisTurn)return 'Счётчик атак';if(JSON.stringify(before.magic)!==JSON.stringify(after.magic)||JSON.stringify(before.slots)!==JSON.stringify(after.slots))return 'Магические ресурсы';if(JSON.stringify(before.resources)!==JSON.stringify(after.resources)||before.hero!==after.hero||before.panache!==after.panache)return 'Ресурсы';if(before.actions!==after.actions||before.reaction!==after.reaction||before.shieldRaised!==after.shieldRaised)return 'Ход и щит';return 'Изменение персонажа';}
+const api={escape,norm,loreSubject,sessionEvents,glossary,richText,explain,damageFormula,changeLabel};root.ListTableTools=api;if(typeof module!=='undefined')module.exports=api;
+})(typeof window!=='undefined'?window:globalThis);

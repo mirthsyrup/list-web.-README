@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "root": "ipa-original",
+      "catalogs": {
+        "classes": 29,
+        "ancestries": 50,
+        "backgrounds": 502,
+        "heritages": 328,
+        "class-features": 874,
+        "ancestry-features": 55,
+        "equipment": 5856,
+        "feats": 6283,
+        "spells": 1975,
+        "actions": 574,
+        "conditions": 43
+      },
+      "checks": [
+        "local bundle boot with internet requests blocked",
+        "native bridge stubs",
+        "HP/armor calculations",
+        "damage and persistent reload",
+        "all catalog categories",
+        "spell search/details",
+        "export",
+        "theme",
+        "phone/desktop textures",
+        "legal files"
+      ],
+      "errors": [],
+      "failed": []
+    },
+    {
+      "root": "ipa-compact",
+      "catalogs": {
+        "classes": 29,
+        "ancestries": 50,
+        "backgrounds": 502,
+        "heritages": 328,
+        "class-features": 874,
+        "ancestry-features": 55,
+        "equipment": 5856,
+        "feats": 6283,
+        "spells": 1975,
+        "actions": 574,
+        "conditions": 43
+      },
+      "checks": [
+        "local bundle boot with internet requests blocked",
+        "native bridge stubs",
+        "HP/armor calculations",
+        "damage and persistent reload",
+        "all catalog categories",
+        "spell search/details",
+        "export",
+        "theme",
+        "phone/desktop textures",
+        "legal files"
+      ],
+      "errors": [],
+      "failed": []
+    }
+  ],
+  "limitation": "Chromium/local HTTP checks with bridge stubs; file:// is blocked by the managed browser policy. Physical iPhone and real native bridges not exercised."
+}
