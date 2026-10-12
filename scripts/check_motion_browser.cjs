@@ -41,7 +41,7 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
       const cdp = await context.newCDPSession(page);
       await cdp.send('Performance.enable');
       const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x=>[x.name,x.value]));
-      const settled = () => page.evaluate(async () => { for(let i=0;i<3;i++){await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));await new Promise(requestAnimationFrame);} });
+      const settled = () => page.evaluate(async () => { for(let i=0;i<3;i++){await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));await new Promise(requestAnimationFrame);} });
       // Exercise the visible summary, not an off-screen group. Keep a real long
       // page below it so the normal-flow case is distinct from bottom clamping.
       await page.evaluate(() => {const footer=document.createElement('div');footer.id='qa-scroll-room';footer.style.height='1400px';document.querySelector('.shell').append(footer);const d=document.querySelector('.ability-group');scrollTo(0,scrollY+d.getBoundingClientRect().top-100);});
@@ -52,7 +52,7 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
         for(let i=0;i<6;i++){
           ListMotion.fold(d, i%2===1);
           paths.push(d.getAnimations().map(a=>Object.keys(a.effect.getKeyframes()[0]).filter(k=>!['offset','computedOffset','easing','composite'].includes(k))));
-          await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));
+          await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));
           await new Promise(requestAnimationFrame);
         }
         return paths;
@@ -65,17 +65,17 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
       const reversal = await page.evaluate(async () => {
         const d=document.querySelector('.ability-group'), card=d.querySelector('.item'), summary=d.querySelector('summary');
         for(let i=0;i<5;i++){summary.click();await new Promise(r=>setTimeout(r,35));}
-        await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));
+        await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));
         await new Promise(requestAnimationFrame);
         return {open:d.open,sameCard:card===d.querySelector('.item'),style:d.getAttribute('style')||'',scroll:scrollY};
       });
       assert.equal(reversal.open,false); assert(reversal.sameCard); assert.equal(reversal.style,'');
       await page.evaluate(() => document.querySelector('#qa-scroll-room').remove());
-      await page.evaluate(async () => {for(const d of document.querySelectorAll('.ability-group'))ListMotion.fold(d,true);await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));scrollTo(0,document.documentElement.scrollHeight);});
+      await page.evaluate(async () => {for(const d of document.querySelectorAll('.ability-group'))ListMotion.fold(d,true);await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));scrollTo(0,document.documentElement.scrollHeight);});
       const bottom = await page.evaluate(async () => {
         const groups=[...document.querySelectorAll('.ability-group')], d=groups.at(-1);
         const before=scrollY; ListMotion.fold(d,false);
-        await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));
+        await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));
         await new Promise(requestAnimationFrame);
         return {before,after:scrollY,max:Math.max(0,document.documentElement.scrollHeight-innerHeight),open:d.open,style:d.getAttribute('style')||'',overflow:document.documentElement.scrollWidth>innerWidth};
       });
@@ -84,12 +84,12 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
         const results=[];
         for(const selector of ['.ability-group','#ability-choices','#ability-features']) {
           const el=document.querySelector(selector), anchor=el.querySelector(':scope > summary')||el.previousElementSibling, follower=el.nextElementSibling;
-          ListMotion.fold(el,true); await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));
+          ListMotion.fold(el,true); await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));
           scrollTo(0,document.documentElement.scrollHeight);
           await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);
           for(const show of [false,true]) {
             ListMotion.fold(el,show);
-            const animations=document.getAnimations();
+            const animations=document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity);
             for(const a of animations)a.currentTime=a.effect.getTiming().duration;
             const before=[anchor.getBoundingClientRect().top,follower?.getBoundingClientRect().top];
             await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
@@ -104,7 +104,7 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
       await page.evaluate(() => {const d=document.querySelector('.ability-group');d.querySelector('summary').click();document.querySelector('[data-tab="sheet"]').click();});
       await settled(); await page.locator('[data-tab="abilities"]').click(); await settled();
       assert.equal(await page.locator('.motion-snapshot').count(),0);
-      assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running').length),0);
+      assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity&&a.playState==='running').length),0);
       await page.emulateMedia({reducedMotion:'reduce'});
       const reduced = await page.evaluate(()=>{const d=document.querySelector('.ability-group');ListMotion.fold(d,false);return {open:d.open,animations:document.getAnimations().length};});
       assert.equal(reduced.open,false); assert.equal(reduced.animations,0);
