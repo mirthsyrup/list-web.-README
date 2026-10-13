@@ -1,0 +1,6 @@
+Pathfinder2eActions glyph outlines from foundryvtt/pf2e.
+Source: https://api.github.com/repos/foundryvtt/pf2e/git/blobs/fd99b8123edfa4b4206843c3c8080dd5857815d5
+Font blob SHA: fd99b8123edfa4b4206843c3c8080dd5857815d5
+Repository: https://github.com/foundryvtt/pf2e/tree/v14-dev
+Licensed under Apache License 2.0; copy included in PF2E-NOTICE.txt.
+Modification: five original font glyphs converted to inline SVG paths, bounds normalized, display size set to 18px.
