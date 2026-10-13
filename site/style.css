@@ -266,3 +266,13 @@ details{display:flow-root}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 
 .ability-block-body{display:flow-root}.ability-block-body[hidden]{display:none!important}
+
+/* Dice hotfix: only content scrolls, the action remains at the sheet bottom. */
+.modal[data-modal-kind="dice"],.modal[data-modal-kind="roll-history"]{display:flex;flex-direction:column;height:92dvh;max-height:92dvh;overflow:hidden;padding-bottom:0}
+.modal[data-modal-kind="dice"]:before,.modal[data-modal-kind="roll-history"]:before,.modal[data-modal-kind="dice"]>.modal-head,.modal[data-modal-kind="roll-history"]>.modal-head{flex-shrink:0}
+.dice-scroll-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.modal[data-modal-kind="dice"]>.modal-foot,.modal[data-modal-kind="roll-history"]>.modal-foot{flex-shrink:0;margin:0;padding:14px 0 max(18px,env(safe-area-inset-bottom));border-top:1px solid var(--divider)}
+.roll-history-panel{border:1px solid var(--border-subtle);border-radius:16px;padding:0 15px;background:var(--surface)}
+.roll-history-panel>summary{padding:14px 0;font-weight:600;color:var(--muted);cursor:pointer}
+.roll-history-list{max-height:55dvh;overflow:auto;overscroll-behavior:contain;padding-bottom:8px}
+.dice-formula{display:block;text-align:center;font-variant-numeric:tabular-nums;line-height:1.5;letter-spacing:normal;margin:16px 0 0}
