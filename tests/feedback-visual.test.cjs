@@ -56,3 +56,13 @@ test('Scene changes, detached results, pagehide, visibility and reduced preferen
  h.api.emit('heal',{anchor:h.$('.health'),hpDelta:1});h.media.matches=true;h.media.callback();assert.equal(h.timers.size,0);
  h.media.matches=false;h.api.emit('heal',{anchor:h.$('.health'),hpDelta:1});Object.defineProperty(h.w.document,'hidden',{value:true,configurable:true});h.w.document.dispatchEvent(new h.w.Event('visibilitychange'));assert.equal(h.timers.size,0);assert(h.animations.every(a=>a.cancelled));
 });
+
+test('critical drawing settles into a persistent seal until another roll; turning visuals off clears it',async()=>{
+ const h=harness(),anchor=h.$('.dice-result');h.api.emit('roll',{anchor,degree:'Критический успех'});
+ for(const callback of [...h.timers.values()])callback();await tick();
+ assert.equal(anchor.dataset.feedbackDegree,'critical-success');assert(h.$('.feedback-seal-ring'));assert.equal(h.$('.feedback-seal-ring').style.opacity,'0.42');assert.equal(h.$('.feedback-seal-spark'),null);assert.equal(h.timers.size,0);assert(h.animations.every(a=>a.cancelled));
+ h.api.emit('roll',{anchor,degree:''});assert.equal(anchor.dataset.feedbackDegree,undefined);assert.equal(h.$('.feedback-seal-ring'),null);assert.equal(h.$('.feedback-roll-label'),null);
+ h.api.emit('roll',{anchor,degree:'Критический провал'});h.api.clear();assert.equal(anchor.dataset.feedbackDegree,undefined);assert.equal(h.$('.feedback-seal-fragment'),null);
+});
+
+test('critical seal survives backgrounding and reduced motion until the next actual roll',()=>{const h=harness(),anchor=h.$('.dice-result');h.api.emit('roll',{anchor,degree:'Критический провал'});Object.defineProperty(h.w.document,'hidden',{value:true,configurable:true});h.w.document.dispatchEvent(new h.w.Event('visibilitychange'));assert.equal(anchor.dataset.feedbackDegree,'critical-failure');assert(h.$('.feedback-seal-ring'));assert.equal(h.timers.size,0);h.media.matches=true;h.media.callback();assert.equal(anchor.dataset.feedbackDegree,'critical-failure');h.api.clear();assert.equal(h.$('.feedback-seal-ring'),null);});

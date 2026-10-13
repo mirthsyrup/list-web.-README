@@ -3,6 +3,7 @@
 const key='list-feedback-v1',defaults={sound:true,volume:.3,haptics:true,visual:true};
 const kinds=new Set(['damage','heal','roll','critical-success','critical-failure','invalid']);
 let preferences={...defaults},context=null,master=null,gestureAt=-Infinity,audioEpoch=0;
+const sampleBuffers=new WeakMap();
 const voices=new Set(),reduced=root.matchMedia?.('(prefers-reduced-motion: reduce)');
 try{const saved=JSON.parse(root.localStorage.getItem(key)||'null');if(saved&&typeof saved==='object'){for(const name of ['sound','haptics','visual'])if(typeof saved[name]==='boolean')preferences[name]=saved[name];if(Number.isFinite(saved.volume))preferences.volume=Math.max(0,Math.min(1,saved.volume));}}catch{}
 const ios=()=>/iPad|iPhone|iPod/.test(root.navigator?.userAgent||'')||root.navigator?.platform==='MacIntel'&&root.navigator?.maxTouchPoints>1;
@@ -15,8 +16,38 @@ function unlock(event){if(event?.isTrusted===true)gestureAt=Date.now();if(!recen
 function cancelHaptic(){try{if(!ios())root.navigator?.vibrate?.(0);}catch{}}
 function stopAudio(){audioEpoch++;for(const voice of [...voices])voice.stop();}
 function stop(){stopAudio();cancelHaptic();root.ListFeedbackVisual?.clear?.();}
+function selectSample(kind,detail={}){
+ if(kind==='critical-success')return 'S16';if(kind==='critical-failure')return 'F1';
+ if(kind!=='damage'&&kind!=='heal')return null;
+ const max=Number(detail.maxHp),given=Number(detail.damageAmount);
+ const amount=kind==='heal'?Math.max(0,Number(detail.hpDelta)||0):Number.isFinite(given)&&given>=0?given:Math.max(0,-(Number(detail.hpDelta)||0))+Math.max(0,-(Number(detail.tempDelta)||0));
+ const large=Number.isFinite(max)&&max>0&&amount*5>=max;
+ return kind==='heal'?(large?'H6':'H10'):(large?'D2':'D1');
+}
+function classifyRoll(detail={}){
+ if(typeof detail.degree==='string'&&detail.degree)return detail.degree;
+ const rolls=Array.isArray(detail.rolls)?detail.rolls:[detail.natural];
+ if(!rolls.length)return '';
+ const dice=rolls.map(roll=>typeof roll==='object'&&roll?{value:Number(roll.value),sides:Number(roll.sides)}:{value:Number(roll),sides:Number(detail.sides)});
+ if(dice.some(d=>!Number.isInteger(d.value)||!Number.isInteger(d.sides)||d.sides<2||d.value<1||d.value>d.sides))return '';
+ if(dice.every(d=>d.value===d.sides))return 'Критический успех';
+ if(dice.every(d=>d.value===1))return 'Критический провал';return '';
+}
+function sampled(ctx,output,id,when){
+ const entry=root.ListFeedbackSamples?.[id];if(!entry)throw Error('Missing approved feedback sample '+id);
+ let cache=sampleBuffers.get(ctx);if(!cache){cache=new Map();sampleBuffers.set(ctx,cache);}
+ let buffer=cache.get(id);
+ if(!buffer){const binary=root.atob(entry.pcm);buffer=ctx.createBuffer(1,entry.frames,entry.sampleRate);const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++){const v=binary.charCodeAt(i*2)|(binary.charCodeAt(i*2+1)<<8);data[i]=(v>=32768?v-65536:v)/32768;}
+  cache.set(id,buffer);
+ }
+ const source=ctx.createBufferSource();source.buffer=buffer;source.connect(output);let finished=false;
+ const record={stop(){if(finished)return;finished=true;try{source.stop();}catch{}source.disconnect();voices.delete(record);}};
+ source.onended=()=>record.stop();source.start(when);return record;
+}
 /* All envelopes start and end at silence, including the filtered crack. */
-function synth(ctx,output,kind,when=ctx.currentTime){
+function synth(ctx,output,kind,when=ctx.currentTime,detail={}){
+ const id=selectSample(kind,detail);if(id)return sampled(ctx,output,id,when);
  const nodes=[],sources=[];let ended=0,finished=false;
  const record={stop(){if(finished)return;finished=true;for(const s of sources)try{s.stop();}catch{}for(const n of nodes)try{n.disconnect();}catch{}voices.delete(record);}};
  function node(n){nodes.push(n);return n;}
@@ -24,23 +55,19 @@ function synth(ctx,output,kind,when=ctx.currentTime){
  function tone(freq,end,start,length,level,type='sine'){const o=node(ctx.createOscillator());o.type=type;o.frequency.setValueAtTime(freq,when+start);if(end)o.frequency.exponentialRampToValueAtTime(end,when+start+length);envelope(o,o,level,start,length);}
  function noise(start,length,level,frequency,q=1){const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*length),ctx.sampleRate),data=buffer.getChannelData(0);let seed=7331;for(let i=0;i<data.length;i++){seed=(Math.imul(seed,1664525)+1013904223)|0;data[i]=(seed>>>0)/2147483648-1;}const source=node(ctx.createBufferSource()),filter=node(ctx.createBiquadFilter());source.buffer=buffer;filter.type='bandpass';filter.frequency.value=frequency;filter.Q.value=q;source.connect(filter);envelope(filter,source,level,start,length,.003);}
  switch(kind){
- case 'damage':tone(126,53,0,.34,.45);tone(188,110,.006,.18,.09);noise(0,.065,.15,420,.7);break;
- case 'heal':for(const [i,f]of [392,523.25,659.25].entries()){tone(f,null,i*.085,.49,.115);tone(f*2.003,null,i*.085,.29,.022);}tone(261.6,392,0,.38,.055);break;
  case 'roll':noise(0,.035,.085,1300,1.8);noise(.047,.027,.05,1900,2);tone(280,210,0,.055,.045);break;
- case 'critical-success':for(const[i,f]of [523.25,659.25,783.99].entries()){tone(f,null,i*.08,.48,.12);tone(f*2.005,null,i*.08,.28,.022);}tone(261.6,523.25,0,.26,.04);break;
- case 'critical-failure':noise(0,.055,.13,740,1.2);noise(.065,.045,.075,500,1.1);tone(147,62,.018,.36,.30);tone(207,130,.015,.14,.035);break;
  case 'invalid':noise(0,.035,.08,850,2);tone(330,260,0,.05,.045);break;
  }
  return record;
 }
-function play(kind){if(!preferences.sound||!preferences.volume||!recentGesture()||!unlock())return false;const active=context,deadline=Date.now()+120,epoch=audioEpoch;function start(){if(epoch!==audioEpoch||active!==context||active.state!=='running'||document.hidden||Date.now()>deadline||!preferences.sound||!preferences.volume)return false;while(voices.size>=3)voices.values().next().value.stop();const voice=synth(active,master,kind);voices.add(voice);return true;}if(active.state==='running')return start();try{active.resume().then(start).catch(()=>{});}catch{}return false;}
+function play(kind,detail){if(!preferences.sound||!preferences.volume||!recentGesture()||!unlock())return false;const active=context,deadline=Date.now()+120,epoch=audioEpoch;function start(){if(epoch!==audioEpoch||active!==context||active.state!=='running'||document.hidden||Date.now()>deadline||!preferences.sound||!preferences.volume)return false;while(voices.size>=3)voices.values().next().value.stop();const voice=synth(active,master,kind,active.currentTime,detail);voices.add(voice);return true;}if(active.state==='running')return start();try{active.resume().then(start).catch(()=>{});}catch{}return false;}
 const patterns={damage:[22],heal:[9,45,12],roll:[7], 'critical-success':[12,55,18], 'critical-failure':[25,45,12],invalid:[9]};
 function haptic(kind){if(!preferences.haptics||!recentGesture()||!capabilities().haptics)return false;try{if(typeof root.NativeBridge?.haptic==='function')root.NativeBridge.haptic(kind);else if(root.webkit?.messageHandlers?.haptic)root.webkit.messageHandlers.haptic.postMessage({kind});else root.navigator.vibrate(patterns[kind]);return true;}catch{return false;}}
-function emit(kind,detail={}){if(!kinds.has(kind)||document.hidden)return{sound:false,haptics:false,visual:false};let visual=false;if(preferences.visual&&!detail.deferVisual)try{visual=root.ListFeedbackVisual?.emit?.(kind,detail)!==false&&!!root.ListFeedbackVisual;}catch{}let sound=false;try{sound=play(kind);}catch{stopAudio();}return{sound,haptics:haptic(kind),visual};}
+function emit(kind,detail={}){if(['roll','critical-success','critical-failure'].includes(kind)){const degree=classifyRoll(detail)||(kind==='critical-success'?'Критический успех':kind==='critical-failure'?'Критический провал':'');detail={...detail,degree};kind=degree==='Критический успех'?'critical-success':degree==='Критический провал'?'critical-failure':'roll';}if(!kinds.has(kind)||document.hidden)return{sound:false,haptics:false,visual:false};let visual=false;if(preferences.visual&&!detail.deferVisual)try{visual=root.ListFeedbackVisual?.emit?.(kind,detail)!==false&&!!root.ListFeedbackVisual;}catch{}const tactile=haptic(kind);let sound=false;try{sound=play(kind,detail);}catch{stopAudio();}return{sound,haptics:tactile,visual,sample:selectSample(kind,detail)};}
 function demo(kind,detail={}){return emit(kind,{...detail,preview:true});}
 function settingsHTML(){const p=prefs(),cap=capabilities(),row=(name,title,sub='')=>`<button class="setting-switch" data-action="feedback-toggle" data-key="${name}" role="switch" aria-checked="${p[name]}" ${name==='haptics'&&!cap.haptics?'disabled':''}><span><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span><span class="switch-track"><span></span></span></button>`;return row('sound','Звуки действий','Урон, лечение и броски')+`<div class="feedback-volume"><label for="feedback-volume">Громкость</label><input id="feedback-volume" type="range" min="0" max="100" step="1" value="${Math.round(p.volume*100)}" aria-label="Громкость звуков"><output for="feedback-volume">${Math.round(p.volume*100)}%</output></div>`+row('haptics','Вибрация',cap.haptics?'Короткий тактильный отклик':'Недоступна в этой среде')+row('visual','Визуальный отклик',cap.reducedMotion?'Упрощён с учётом настроек движения':'Подсветка здоровья и компаса');}
-async function renderPreview(kind){if(!kinds.has(kind))throw Error('Unknown feedback kind');const Offline=root.OfflineAudioContext||root.webkitOfflineAudioContext;if(!Offline)throw Error('Offline audio unavailable');const ctx=new Offline(1,48000,48000),gain=ctx.createGain();gain.gain.value=.3*.65;gain.connect(ctx.destination);synth(ctx,gain,kind,0);return ctx.startRendering();}
+async function renderPreview(kind,detail={}){if(!kinds.has(kind))throw Error('Unknown feedback kind');const Offline=root.OfflineAudioContext||root.webkitOfflineAudioContext;if(!Offline)throw Error('Offline audio unavailable');const ctx=new Offline(1,96000,48000),gain=ctx.createGain();gain.gain.value=.3*.65;gain.connect(ctx.destination);synth(ctx,gain,kind,0,detail);return ctx.startRendering();}
 for(const event of ['pointerdown','keydown','click'])document.addEventListener(event,e=>{if(e.isTrusted&&!(event==='keydown'&&e.repeat))unlock(e);},{capture:true,passive:true});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){gestureAt=-Infinity;stop();try{context?.suspend()?.catch?.(()=>{});}catch{}}});root.addEventListener('pagehide',()=>{gestureAt=-Infinity;stop();try{context?.suspend()?.catch?.(()=>{});}catch{}});
-root.ListFeedback={prefs,configure,unlock,emit,stop,capabilities,demo,settingsHTML,renderPreview};
+document.addEventListener('visibilitychange',()=>{if(document.hidden){gestureAt=-Infinity;stopAudio();cancelHaptic();try{context?.suspend()?.catch?.(()=>{});}catch{}}});root.addEventListener('pagehide',()=>{gestureAt=-Infinity;stopAudio();cancelHaptic();try{context?.suspend()?.catch?.(()=>{});}catch{}});
+root.ListFeedback={prefs,configure,unlock,emit,stop,capabilities,demo,settingsHTML,renderPreview,selectSample,classifyRoll};
 })(window);
