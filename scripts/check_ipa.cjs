@@ -41,6 +41,8 @@ const http = require('node:http');
       });
       await page.goto(`http://127.0.0.1:${port}/${index}/Payload/List.app/web/ios-entry.html`);
       await page.locator('[data-action="create"]').waitFor();
+      const numeralFont = await page.evaluate(async () => { await document.fonts.ready; return [...document.fonts].find(font => font.family === 'List Folio Numerals')?.status || null; });
+      if (fs.readFileSync(path.join(root, 'Payload/List.app/web/ios-entry.html'), 'utf8').includes('font-family:"List Folio Numerals"')) assert.equal(numeralFont, 'loaded', 'Embedded iOS numeral font must load without external requests');
       const catalogs = await page.evaluate(() => Object.fromEntries(Object.entries(CATALOG).map(([key, value]) => [key, value.length])));
       await page.evaluate(() => {
         const R = Rules, find = (cat, slug) => CATALOG[cat].find(x => x.slug === slug), c = R.create();
@@ -105,7 +107,7 @@ const http = require('node:http');
       assert.deepEqual(errors, []);
       const unexpected = failed.filter(x => !x.url.endsWith('manifest.webmanifest'));
       assert.deepEqual(unexpected, []);
-      results.push({root, catalogs, checks:['local bundle boot with internet requests blocked','native bridge stubs','HP/armor calculations','damage and persistent reload','all catalog categories','spell search/details','export','theme','phone/desktop textures','legal files'], errors, failed});
+      results.push({root, catalogs, numeralFont, checks:['local bundle boot with internet requests blocked','embedded numeral font when present','native bridge stubs','HP/armor calculations','damage and persistent reload','all catalog categories','spell search/details','export','theme','phone/desktop textures','legal files'], errors, failed});
       await page.screenshot({path: path.join(root, 'checked.png')});
       await context.close();
     }

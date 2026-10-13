@@ -3,7 +3,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 (async()=>{
  const target=process.argv[2]||'.',root=/^https?:\/\//.test(target)?null:path.resolve(target),out=path.resolve(process.argv[3]||'out/visual-check');fs.mkdirSync(out,{recursive:true});
- const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/manifest+json'};
+ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.woff2':'font/woff2','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/manifest+json'};
  const server=root&&http.createServer((req,res)=>{const uri=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+(uri==='/'?'/index.html':uri));if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}res.setHeader('content-type',mime[path.extname(file)]||'application/octet-stream');fs.createReadStream(file).pipe(res);});
  if(server)await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const url=server?`http://127.0.0.1:${server.address().port}/`:target;
@@ -17,7 +17,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.evaluate(()=>{const c=Rules.create();c.name='Мираэль';c.level=3;c.classId=CATALOG.classes.find(x=>x.slug==='swashbuckler').id;c.ancestry=CATALOG.ancestries.find(x=>x.slug==='human').id;c.hp=39;receiveNativeFile(JSON.stringify(c));});
   const finite=()=>page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));});
   const clean=()=>page.evaluate(()=>{document.querySelector('#toast').classList.remove('on');});
-  const snapshot=async name=>{await finite();await clean();await page.screenshot({path:path.join(out,name+'.png')});};
+  const snapshot=async name=>{await finite();await page.evaluate(()=>document.fonts.ready);await clean();await page.screenshot({path:path.join(out,name+'.png')});};
   const marker=async()=>{await finite();return page.evaluate(()=>{const a=document.querySelector('.nav button.on').getBoundingClientRect(),b=document.querySelector('.nav-active-surface').getBoundingClientRect();return [Math.abs(a.left-b.left),Math.abs(a.top-b.top),Math.abs(a.width-b.width),Math.abs(a.height-b.height)];});};
   const compass=async selector=>page.locator(selector).first().evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{width:r.width,height:r.height,fill:s.fill,stroke:s.stroke};});
   const composition=()=>page.evaluate(()=>{const b=document.querySelector('.dice-result>b'),seal=document.querySelector('.dice-result .result-seal'),caption=b.parentElement.querySelector('p'),n=b.getBoundingClientRect(),s=seal.getBoundingClientRect(),style=getComputedStyle(b);return{centerDelta:[Math.abs(n.x+n.width/2-s.x-s.width/2),Math.abs(n.y+n.height/2-s.y-s.height/2)],numberWidth:n.width,innerDiameter:s.width*.7,fontSize:parseFloat(style.fontSize),fontWeight:Number(style.fontWeight),sameInk:style.color===getComputedStyle(seal).color,captionClear:caption.getBoundingClientRect().top>=s.bottom};});
@@ -53,6 +53,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal(await page.locator('#table-check-result .dice-result>b').textContent(),String(4+bonus));assert(await page.locator('#table-check-result').innerText().then(t=>t.includes('На кости 4')));
   assert.equal(await page.locator('.result-seal[aria-hidden="true"]').count(),1);await snapshot('result-light');
   const rollSeal=await compass('.result-seal .folio-seal');assert.equal(rollSeal.fill,'none');assert.equal(rollSeal.width,120);assert.equal(rollSeal.height,120);
+  const numeralFont=await page.evaluate(()=>({loaded:[...document.fonts].some(f=>f.family==='List Folio Numerals'&&f.status==='loaded'),family:getComputedStyle(document.querySelector('.dice-result>b')).fontFamily,sources:[...document.styleSheets].flatMap(s=>[...s.cssRules]).filter(r=>r.type===CSSRule.FONT_FACE_RULE).map(r=>r.style.getPropertyValue('src'))}));
+  assert(numeralFont.loaded,'Bundled numeral font must actually load');assert(numeralFont.family.includes('List Folio Numerals'));if(bootstrap.zipLoader)assert(numeralFont.sources.some(s=>s.includes('blob:')),'Font must resolve from the ZIP without external requests');
+  await page.locator('.dice-result').screenshot({path:path.join(out,'compass-light.png')});
   const rollComposition=await checkComposition(),numberLayouts=[];
   for(const text of ['1','12','888','-12','12345']){await page.locator('.dice-result>b').evaluate((b,value)=>{b.textContent=value;b.style.setProperty('--result-digits',String(value.length));},text);numberLayouts.push({text,...await checkComposition()});}
   await page.locator('.dice-result>b').evaluate((b,value)=>{b.textContent=value;b.style.setProperty('--result-digits',String(value.length));},String(4+bonus));
@@ -66,6 +69,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.locator('[data-action="check"]').first().click();await page.locator('[data-action="table-roll"]').click();await snapshot('result-dark');
   const darkSeal=await compass('.result-seal .folio-seal');assert.equal(darkSeal.fill,'none');assert.equal(darkSeal.width,120);
   await checkComposition();
+  await page.locator('.dice-result').screenshot({path:path.join(out,'compass-dark.png')});
   await page.locator('[data-action="close"]').first().click();await finite();
   const layouts=[];
   for(const width of [320,390,1280]){await page.setViewportSize({width,height:900});await finite();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);for(const tab of ['sheet','abilities','bag','catalog']){await page.locator(`[data-tab="${tab}"]`).click();const delta=await marker();assert(delta.every(x=>x<1),JSON.stringify({width,tab,delta}));}layouts.push({width,allFourMarkersMatchButtons:true,noHorizontalOverflow:true});}
@@ -78,7 +82,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal(await page.locator('.ink-surface').count(),0);assert(await page.locator('html').getAttribute('data-ui-paused').then(x=>x!==null));
   await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
   assert.deepEqual(errors,[]);assert.deepEqual(failedAssets,[]);
-  const report={passed:true,entry:url,zipLoader:bootstrap.zipLoader,stylesLoaded:bootstrap.styles.length,emptySeal,rollSeal,rollComposition,numberLayouts,sun,layouts,idleSheetLayouts:idleLayouts,checks:['all release styles load through public entry','four mobile tabs share one row','empty and dice compasses are bounded outlines','number and seal share center and ink; signed/large totals fit','sun is centered and legible; moon keeps its size','heartbeat and ink styles applied','typed input unchanged','keyboard action and HP persistence','roll total stays exact','decorations hidden from accessibility tree','pointer feedback cleans up','light and dark layouts','all navigation indicators align after resize','reduced motion stops decorative motion','visibility event clears overlays'],errors,failedAssets,limitation:'Chromium HTTP check of the ZIP entry; physical iPhone/Android and actual device FPS not measured.'};
+  const report={passed:true,entry:url,zipLoader:bootstrap.zipLoader,stylesLoaded:bootstrap.styles.length,emptySeal,rollSeal,numeralFont,rollComposition,numberLayouts,sun,layouts,idleSheetLayouts:idleLayouts,checks:['all release styles and embedded numeral font load through public entry','four mobile tabs share one row','empty and dice compasses are bounded outlines','number and seal share center and ink; signed/large totals fit','sun is centered and legible; moon keeps its size','heartbeat and ink styles applied','typed input unchanged','keyboard action and HP persistence','roll total stays exact','decorations hidden from accessibility tree','pointer feedback cleans up','light and dark layouts','all navigation indicators align after resize','reduced motion stops decorative motion','visibility event clears overlays'],errors,failedAssets,limitation:'Chromium HTTP check of the ZIP entry; physical iPhone/Android and actual device FPS not measured.'};
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));await context.close();
  }finally{await browser.close();if(server)await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

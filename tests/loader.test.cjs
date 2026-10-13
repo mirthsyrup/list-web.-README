@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{JSDOM,ResourceLoader,VirtualConsole}=require('jsdom');
 
 test('Public ZIP loader applies all release styles, boots feedback and preserves lazy catalog URLs',async()=>{
-  const base=path.resolve(__dirname,'..'),bytes=fs.readFileSync(base+'/list-site-2.8.8.zip'),blobs=new Map(),errors=[],requested=[];
+  const base=path.resolve(__dirname,'..'),bytes=fs.readFileSync(base+'/list-site-2.8.9.zip'),blobs=new Map(),errors=[],requested=[];
   let w,id=0;
   class Resources extends ResourceLoader{
     fetch(url){
@@ -28,7 +28,7 @@ test('Public ZIP loader applies all release styles, boots feedback and preserves
       if(Date.now()>deadline)throw Error('ZIP bootstrap timeout: '+JSON.stringify({errors,requested,blobs:blobs.size,status:w.document.querySelector('#status')?.textContent}));
       await new Promise(r=>setTimeout(r,25));
     }
-    assert.equal(requested[0],'list-site-2.8.8.zip');
+    assert.equal(requested[0],'list-site-2.8.9.zip');
     assert.match(w.document.querySelector('h1').textContent,/Pathfinder 2e/);
     assert(w.__ZIP_URLS['data/feats.js'].startsWith('blob:'));
     assert(w.document.querySelector('script[src]').src.startsWith('blob:'));
@@ -38,6 +38,6 @@ test('Public ZIP loader applies all release styles, boots feedback and preserves
     assert.equal(w.getComputedStyle(holder.firstChild).fill,'none','The compass must be an outline');
     // JSDOM does not apply @supports selector(:has()). Navigation geometry is
     // checked through this same ZIP entry in check_visual_browser.cjs.
-    assert.deepEqual(errors,[]);
+    const font=[...blobs].find(([,b])=>b.type==='font/woff2');assert(font,'Bundled font must have a font/woff2 blob URL');const fontBytes=Buffer.from(await font[1].arrayBuffer());assert.deepEqual(fontBytes,fs.readFileSync(base+'/site/assets/fonts/folio-numerals.woff2'));const css=await Promise.all(styles.map(link=>blobs.get(link.href).text()));assert(css.some(text=>text.includes('@font-face')&&text.includes(font[0])),'CSS must reference the bundled font blob');assert.deepEqual(errors,[]);
   }finally{dom.window.close();}
 });

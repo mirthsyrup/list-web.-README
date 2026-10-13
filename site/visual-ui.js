@@ -1,5 +1,6 @@
 /* Small, event-driven accents. No decorative timers or changes to character data. */
 (function(root){'use strict';
+document.fonts?.load('400 46px "List Folio Numerals"','0123456789+-−').catch(()=>{});
 const seal=`<svg class="folio-seal" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="44"/><circle cx="60" cy="60" r="39" stroke-dasharray="1 7"/><path d="m60 5 6 11-6 11-6-11zm0 88 6 11-6 11-6-11zM5 60l11-6 11 6-11 6zm88 0 11-6 11 6-11 6zM23 23l10 3-7 7zm64 64 10 10-3-10zM23 97l3-10 7 7zm64-64 10-10-10 3z"/><path d="M39 20q-14 4-19 18m81 44q-5 14-20 19M20 81q5 15 19 19m42-80q14 5 19 19"/><path d="M43 18q-5 0-6 5 6 0 6-5zm-24 23q0-5 5-6 0 6-5 6zm82 38q0 5-5 6 0-6 5-6zm-24 23q5 0 6-5-6 0-6 5z"/></svg>`;
 const media=root.matchMedia?.('(prefers-reduced-motion: reduce)'),ripples=new Set(),values=new WeakMap(),activeValues=new Set();
 const quiet=()=>document.hidden||!!media?.matches;
