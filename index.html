@@ -62,10 +62,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
     for(const p of dataPaths) await rawUrl(p);
 
-    const scriptPaths=[];
+    const scriptPaths=[],stylePaths=[];
     zip.forEach((name,entry)=>{
       const rel=prefix && name.startsWith(prefix)?name.slice(prefix.length):name;
       if(!entry.dir && /^[^/]+\.js$/.test(rel) && rel!=='sw.js') scriptPaths.push(rel);
+      if(!entry.dir && /\.css$/i.test(rel)) stylePaths.push(rel);
     });
 
     for(const p of scriptPaths){
@@ -80,7 +81,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       objectUrls[p]=URL.createObjectURL(new Blob([s],{type:'text/javascript;charset=utf-8'}));
     }
 
-    for(const p of ['style.css','desktop.css']){
+    for(const p of stylePaths){
       let s=await text(p);
       if(s==null) continue;
       for(const q of [
