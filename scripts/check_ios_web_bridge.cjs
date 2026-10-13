@@ -2,7 +2,7 @@
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 (async()=>{
- const root=path.resolve(process.argv[2]),out=path.resolve(process.argv[3]);fs.mkdirSync(out,{recursive:true});
+ const root=path.resolve(process.argv[2]),out=path.resolve(process.argv[3]),version=process.argv[4]||'2.9.3';fs.mkdirSync(out,{recursive:true});
  const entry=fs.readFileSync(path.join(root,'index.html'));
  const server=http.createServer((req,res)=>{if(new URL(req.url,'http://local').pathname!=='/'){res.writeHead(404);res.end();return;}res.setHeader('content-type','text/html');res.end(entry);});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/`;
@@ -40,9 +40,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   await page.evaluate(()=>ListFeedback.emit('critical-failure',{degree:'Критический провал'}));assert.equal(await page.evaluate(()=>window.__haptics.length),count);
   await page.locator('[data-action="export"]').click();await page.waitForFunction(()=>window.__exports.length>0);
   const exported=await page.evaluate(()=>window.__exports.at(-1));assert.equal(JSON.parse(exported.text).character.name,'Мираэль🧝🏻');
-  await page.locator('[data-action="about"]').click();assert.match(await page.locator('.modal-head h2').textContent(),/2\.9\.3/);
+  await page.locator('[data-action="about"]').click();assert.ok((await page.locator('.modal-head h2').textContent()).includes(version));
   assert.deepEqual(errors,[]);
-  const report={passed:true,checks:['exact IPA inline entry boots with iPhone WK bridge','old native snapshot restores Unicode hero into empty localStorage','same character ID and HP survive migration','iPhone native haptics are available and settings enabled','damage and critical-success send typed WK commands','muting haptics suppresses bridge calls','export keeps Unicode character content','About identifies native version2.9.3'],errors,physical_device_tested:false};
+  const report={passed:true,checks:['exact IPA inline entry boots with iPhone WK bridge','old native snapshot restores Unicode hero into empty localStorage','same character ID and HP survive migration','iPhone native haptics are available and settings enabled','damage and critical-success send typed WK commands','muting haptics suppresses bridge calls','export keeps Unicode character content',`About identifies native version${version}`],errors,physical_device_tested:false};
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));await fresh.close();
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});
