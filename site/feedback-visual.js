@@ -1,6 +1,6 @@
 /* Event-driven card feedback. Character state and rule calculations stay elsewhere. */
 (function(root){'use strict';
-const media=root.matchMedia?.('(prefers-reduced-motion: reduce)'),active=new Set(),owners=new WeakMap(),errors=new Map();
+const media=root.matchMedia?.('(prefers-reduced-motion: reduce)'),active=new Set(),owners=new WeakMap(),errors=new Map(),criticalMarks=new Set();
 let errorId=0;
 const quiet=()=>document.hidden||!!media?.matches;
 function finish(record){
@@ -11,11 +11,24 @@ function finish(record){
  record.anchor.classList.remove('health-feedback');
  if(owners.get(record.anchor)===record)owners.delete(record.anchor);
 }
-function clear(){for(const record of [...active])finish(record);}
+function beginRoll(){
+ for(const record of [...active])if(record.critical)finish(record);
+ for(const anchor of criticalMarks){delete anchor.dataset.feedbackDegree;anchor.querySelector(':scope > .feedback-roll-label')?.remove();}
+ criticalMarks.clear();
+}
+function clear(){beginRoll();for(const record of [...active])finish(record);}
+function settleCritical(record){
+ if(!active.has(record))return;clearTimeout(record.timer);record.timer=null;
+ for(const {el,frame} of record.finalStyles)for(const key of ['opacity','transform'])if(frame[key]!==undefined)el.style[key]=String(frame[key]);
+ for(const animation of record.animations)animation.cancel();record.animations.length=0;record.finalStyles.length=0;
+ for(const el of record.nodes.filter(el=>el.classList.contains('feedback-seal-spark')))el.remove();
+ record.nodes=record.nodes.filter(el=>el.isConnected);
+}
+function pause(){for(const record of [...active])record.critical?settleCritical(record):finish(record);}
 function own(anchor,duration){
  if(!anchor?.isConnected)return null;
  const old=owners.get(anchor);if(old)finish(old);
- const record={anchor,nodes:[],animations:[],timer:null};active.add(record);owners.set(anchor,record);
+ const record={anchor,nodes:[],animations:[],finalStyles:[],timer:null};active.add(record);owners.set(anchor,record);
  record.timer=setTimeout(()=>finish(record),duration);return record;
 }
  function node(record,cls,text){
@@ -24,7 +37,7 @@ function own(anchor,duration){
 }
 function animate(record,el,frames,options){
  if(quiet()||!el?.animate)return;
- const animation=el.animate(frames,{easing:'cubic-bezier(.2,.7,.3,1)',...options});record.animations.push(animation);
+ const animation=el.animate(frames,{easing:'cubic-bezier(.2,.7,.3,1)',...options});record.animations.push(animation);record.finalStyles.push({el,frame:frames.at(-1)});
  animation.finished.catch(()=>{});return animation;
 }
 function health(kind,detail){
@@ -66,23 +79,23 @@ function roll(kind,detail){
  const degree=detail.degree,success=degree==='Критический успех',failure=degree==='Критический провал';
  if(!success&&!failure)return;
  const anchor=detail.anchor;if(!anchor?.isConnected||document.hidden)return;
- anchor.dataset.feedbackDegree=success?'critical-success':'critical-failure';
+ anchor.dataset.feedbackDegree=success?'critical-success':'critical-failure';criticalMarks.add(anchor);
  let label=anchor.querySelector(':scope > h3');
- if(!label){label=document.createElement('h3');anchor.append(label);}label.textContent=degree;
+ if(!label){label=document.createElement('h3');label.className='feedback-roll-label';anchor.append(label);}label.textContent=degree;
  const seal=anchor.querySelector('.result-seal');if(!seal||quiet())return;
- const record=own(anchor,1200),svg=seal.querySelector('svg');if(!record)return;if(!svg){finish(record);return;}
+ const record=own(anchor,1200),svg=seal.querySelector('svg');if(!record)return;if(!svg){finish(record);return;}record.critical=true;clearTimeout(record.timer);record.timer=setTimeout(()=>settleCritical(record),1150);
  const ring=node(record,'feedback-seal-ring '+(success?'feedback-victory':'feedback-fracture'));
- animate(record,ring,[{opacity:0,transform:'scale(.78)'},{opacity:success?.85:.7,transform:'scale(1)',offset:.18},{opacity:0,transform:`scale(${success?1.65:1.4})`}],{duration:success?1000:650,fill:'forwards'});
+ animate(record,ring,[{opacity:0,transform:'scale(.78)'},{opacity:success?.85:.7,transform:'scale(1)',offset:.18},{opacity:success?.42:.28,transform:`scale(${success?1.16:1.12})`}],{duration:success?1000:650,fill:'forwards'});
  if(success){
   const flare=node(record,'feedback-seal-flare');flare.append(svg.cloneNode(true));
-  animate(record,flare,[{opacity:0,transform:'scale(.93)'},{opacity:1,transform:'scale(1.04)',offset:.22},{opacity:0,transform:'scale(1.2)'}],{duration:900,fill:'forwards'});
+  animate(record,flare,[{opacity:0,transform:'scale(.93)'},{opacity:1,transform:'scale(1.04)',offset:.22},{opacity:.26,transform:'scale(1.035)'}],{duration:900,fill:'forwards'});
  }else{
   // Broken compass quadrants fly apart; the original drawing settles in red.
   for(let i=0;i<4;i++){
    const fragment=node(record,'feedback-seal-fragment');fragment.append(svg.cloneNode(true));
    fragment.style.clipPath=['polygon(0 0,50% 0,50% 50%,0 50%)','polygon(50% 0,100% 0,100% 50%,50% 50%)','polygon(0 50%,50% 50%,50% 100%,0 100%)','polygon(50% 50%,100% 50%,100% 100%,50% 100%)'][i];
    const x=(i%2?1:-1)*(14+i*2),y=(i<2?-1:1)*18;
-   animate(record,fragment,[{opacity:0,transform:'translate(0,0) rotate(0deg)'},{opacity:.95,transform:'translate(0,0) rotate(0deg)',offset:.12},{opacity:0,transform:`translate(${x}px,${y}px) rotate(${i%2?14:-14}deg)`}],{duration:700,fill:'forwards'});
+   animate(record,fragment,[{opacity:0,transform:'translate(0,0) rotate(0deg)'},{opacity:.95,transform:'translate(0,0) rotate(0deg)',offset:.12},{opacity:.42,transform:`translate(${x*.5}px,${y*.5}px) rotate(${i%2?7:-7}deg)`}],{duration:700,fill:'forwards'});
   }
   [...svg.children].forEach((path,i)=>animate(record,path,[{transform:'rotate(0deg) scale(1)'},{transform:`rotate(${i%2?-7:7}deg) scale(1.07,.93)`,offset:.2},{transform:'rotate(0deg) scale(1)'}],{duration:500,fill:'forwards'}));
  }
@@ -113,7 +126,7 @@ function error(field,message){
 }
 function emit(kind,detail={}){
  if(['damage','heal','health-damage','health-heal'].includes(kind))return health(kind,detail);
- if(['roll','critical-success','critical-failure'].includes(kind))return roll(kind,detail);
+ if(['roll','critical-success','critical-failure'].includes(kind)){beginRoll();return roll(kind,detail);}
  if(kind==='invalid'){
   const anchor=detail.field||detail.anchor;if(!anchor?.isConnected||quiet())return;
   const record=own(anchor,360);if(record)animate(record,anchor,[{opacity:.75},{opacity:1}],{duration:240});
@@ -130,7 +143,7 @@ const observer=new MutationObserver(records=>{
 });
 if(app)observer.observe(app,{subtree:true,childList:true,attributes:true,attributeFilter:['data-scene']});
 if(overlay)observer.observe(overlay,{subtree:true,childList:true});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});
-root.addEventListener('pagehide',clear);media?.addEventListener?.('change',()=>{if(media.matches)clear();});
-root.ListFeedbackVisual={emit,clear,error,clearError};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+root.addEventListener('pagehide',pause);media?.addEventListener?.('change',()=>{if(media.matches)pause();});
+root.ListFeedbackVisual={emit,clear,beginRoll,error,clearError};
 })(window);
