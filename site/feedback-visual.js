@@ -5,8 +5,9 @@ let errorId=0;
 const quiet=()=>document.hidden||!!media?.matches;
 function finish(record){
  if(!active.delete(record))return;
- clearTimeout(record.timer);for(const animation of record.animations)animation.cancel();
+ clearTimeout(record.timer);
  for(const node of record.nodes)node.remove();
+ for(const animation of record.animations)animation.cancel();
  record.anchor.classList.remove('health-feedback');
  if(owners.get(record.anchor)===record)owners.delete(record.anchor);
 }
@@ -31,57 +32,66 @@ function health(kind,detail){
  const healing=kind==='heal'||kind==='health-heal';
  if(healing?hp<=0:hp>=0&&temp>=0)return;
  const anchor=detail.anchor||document.querySelector('.health');
- const record=own(anchor,quiet()?1400:900);if(!record||document.hidden){if(record)finish(record);return;}
+ const reduced=quiet(),record=own(anchor,reduced?1400:1150);
+ if(!record||document.hidden){if(record)finish(record);return;}
  anchor.classList.add('health-feedback');
- const label=detail.label||(healing?'+'+hp+' ОЗ':[
-  hp<0?'−'+Math.abs(hp)+' ОЗ':'',temp<0?'−'+Math.abs(temp)+' врем.':''
- ].filter(Boolean).join(' · '));
- const delta=node(record,'health-feedback-delta '+(healing?'feedback-heal':'feedback-damage'),label);
- const combined=hp<0&&temp<0;if(combined)delta.classList.add('feedback-combined');
- // Fit once before starting the animation; never measure geometry per frame.
+ // Show the actual loss including absorbed temporary HP, or the capped healing gain.
+ const amount=healing?hp:Math.max(0,-hp)+Math.max(0,-temp);
+ const delta=node(record,'health-feedback-delta '+(healing?'feedback-heal':'feedback-damage'),String(amount));
  const available=anchor.clientWidth-24;
  if(available>0&&delta.scrollWidth>available){
-  const size=parseFloat(root.getComputedStyle(delta).fontSize)||(hp<0&&temp<0?14:18);
-  const padding=combined?0:14;
-  delta.style.fontSize=Math.max(9,Math.floor(size*Math.max(1,available-padding)/Math.max(1,delta.scrollWidth-padding)))+'px';
+  const size=parseFloat(root.getComputedStyle(delta).fontSize)||27;
+  delta.style.fontSize=Math.max(12,Math.floor(size*available/delta.scrollWidth))+'px';
  }
- let inMeterGap=false;
- if(combined){
-  const meter=anchor.querySelector('.meter'),controls=anchor.querySelector('.meter + .row');
-  if(meter&&controls){
-   const cardRect=anchor.getBoundingClientRect(),meterRect=meter.getBoundingClientRect(),controlsRect=controls.getBoundingClientRect(),gap=controlsRect.top-meterRect.bottom;
-   if(gap>=14){
-    const current=parseFloat(root.getComputedStyle(delta).fontSize)||14;
-    const size=Math.min(current,Math.max(9,(gap-4)/1.1));delta.style.fontSize=size+'px';
-    delta.style.top=(meterRect.bottom-cardRect.top+(gap-size*1.1)/2)+'px';inMeterGap=true;
-   }
-  }
+ // Measure once. The number starts below HP, then moves independently of the card.
+ const card=anchor.getBoundingClientRect(),meter=anchor.querySelector('.meter'),controls=anchor.querySelector('.meter + .row');
+ if(meter){
+  const m=meter.getBoundingClientRect(),gap=controls?controls.getBoundingClientRect().top-m.bottom:24;
+  delta.style.top=(m.bottom-card.top+Math.max(10,gap/2))+'px';
  }
- if(!quiet()){
-  const wash=node(record,'health-feedback-wash '+(healing?'feedback-heal':'feedback-damage'));
-  animate(record,wash,[{opacity:0},{opacity:healing ? .16 : .2,offset:.22},{opacity:0}],{duration:healing?650:440});
-  animate(record,delta,[{opacity:0,transform:inMeterGap?'translateY(0)':'translateY(3px)'},{opacity:1,transform:'translateY(0)',offset:.16},{opacity:1,transform:inMeterGap?'translateY(0)':'translateY(-4px)',offset:.72},{opacity:0,transform:inMeterGap?'translateY(-2px)':'translateY(-7px)'}],{duration:820});
- }
+ if(reduced||!delta.animate){delta.style.opacity='1';return;}
+ const angle=Math.random()*Math.PI*2,distance=76+Math.random()*32;
+ const origin=delta.getBoundingClientRect(),cx=origin.left+origin.width/2,cy=origin.top+origin.height/2;
+ const marginX=12+origin.width/2,marginY=12+origin.height/2;
+ const dx=Math.max(marginX-cx,Math.min(root.innerWidth-marginX-cx,Math.cos(angle)*distance));
+ const dy=Math.max(marginY-cy,Math.min(root.innerHeight-marginY-cy,Math.sin(angle)*distance));
+ const tilt=(Math.random()-.5)*18,position=(t)=>`translate(calc(-50% + ${dx*t}px),calc(-50% + ${dy*t}px)) rotate(${tilt*t}deg)`;
+ const wash=node(record,'health-feedback-wash '+(healing?'feedback-heal':'feedback-damage'));
+ animate(record,wash,[{opacity:0},{opacity:healing?.16:.2,offset:.22},{opacity:0}],{duration:healing?650:440,fill:'forwards'});
+ const flight=animate(record,delta,[{opacity:0,transform:position(0)},{opacity:1,transform:position(.06),offset:.08},{opacity:.85,transform:position(.45),offset:.5},{opacity:0,transform:position(1)}],{duration:1000,fill:'forwards',easing:'cubic-bezier(.15,.55,.3,1)'});
+ // The hidden base style and filled last frame prevent the old end-of-animation flash.
+ flight?.finished.then(()=>finish(record),()=>{});
 }
 function roll(kind,detail){
- const degree=detail.degree;
- const success=degree==='Критический успех',failure=degree==='Критический провал';
- // The caller must supply the rules' computed degree; a natural 20/1 alone is insufficient.
+ const degree=detail.degree,success=degree==='Критический успех',failure=degree==='Критический провал';
  if(!success&&!failure)return;
  const anchor=detail.anchor;if(!anchor?.isConnected||document.hidden)return;
  anchor.dataset.feedbackDegree=success?'critical-success':'critical-failure';
  let label=anchor.querySelector(':scope > h3');
  if(!label){label=document.createElement('h3');anchor.append(label);}label.textContent=degree;
  const seal=anchor.querySelector('.result-seal');if(!seal||quiet())return;
- const record=own(anchor,700);if(!record)return;
- const svg=seal.querySelector('svg');if(!svg)return;
+ const record=own(anchor,1200),svg=seal.querySelector('svg');if(!record)return;if(!svg){finish(record);return;}
+ const ring=node(record,'feedback-seal-ring '+(success?'feedback-victory':'feedback-fracture'));
+ animate(record,ring,[{opacity:0,transform:'scale(.78)'},{opacity:success?.85:.7,transform:'scale(1)',offset:.18},{opacity:0,transform:`scale(${success?1.65:1.4})`}],{duration:success?1000:650,fill:'forwards'});
  if(success){
   const flare=node(record,'feedback-seal-flare');flare.append(svg.cloneNode(true));
-  animate(record,flare,[{opacity:0,transform:'scale(.99)'},{opacity:.85,transform:'scale(1.025)',offset:.28},{opacity:0,transform:'scale(1.04)'}],{duration:600});
+  animate(record,flare,[{opacity:0,transform:'scale(.93)'},{opacity:1,transform:'scale(1.04)',offset:.22},{opacity:0,transform:'scale(1.2)'}],{duration:900,fill:'forwards'});
  }else{
-  // Deform only the drawing; the result number stays centred and stationary.
-  const paths=[...svg.children];
-  paths.forEach((path,i)=>animate(record,path,[{transform:'rotate(0deg) scale(1)'},{transform:`rotate(${i%2?-3:3}deg) scale(1.025,.975)`,offset:.24},{transform:'rotate(0deg) scale(1)'}],{duration:390}));
+  // Broken compass quadrants fly apart; the original drawing settles in red.
+  for(let i=0;i<4;i++){
+   const fragment=node(record,'feedback-seal-fragment');fragment.append(svg.cloneNode(true));
+   fragment.style.clipPath=['polygon(0 0,50% 0,50% 50%,0 50%)','polygon(50% 0,100% 0,100% 50%,50% 50%)','polygon(0 50%,50% 50%,50% 100%,0 100%)','polygon(50% 50%,100% 50%,100% 100%,50% 100%)'][i];
+   const x=(i%2?1:-1)*(14+i*2),y=(i<2?-1:1)*18;
+   animate(record,fragment,[{opacity:0,transform:'translate(0,0) rotate(0deg)'},{opacity:.95,transform:'translate(0,0) rotate(0deg)',offset:.12},{opacity:0,transform:`translate(${x}px,${y}px) rotate(${i%2?14:-14}deg)`}],{duration:700,fill:'forwards'});
+  }
+  [...svg.children].forEach((path,i)=>animate(record,path,[{transform:'rotate(0deg) scale(1)'},{transform:`rotate(${i%2?-7:7}deg) scale(1.07,.93)`,offset:.2},{transform:'rotate(0deg) scale(1)'}],{duration:500,fill:'forwards'}));
+ }
+ const count=success?10:8;
+ for(let i=0;i<count;i++){
+  const spark=node(record,'feedback-seal-spark '+(success?'feedback-victory':'feedback-fracture'));
+  const angle=(i/count)*Math.PI*2-Math.PI/2,radius=success?94:80;
+  const x=Math.cos(angle)*radius,y=Math.sin(angle)*radius+(success?-6:18);
+  animate(record,spark,[{opacity:0,transform:'translate(0,0) scale(.4) rotate(45deg)'},{opacity:1,transform:`translate(${x*.45}px,${y*.45}px) scale(1) rotate(45deg)`,offset:.22},{opacity:0,transform:`translate(${x}px,${y}px) scale(.2) rotate(${success?135:225}deg)`}],{duration:success?1000:850,delay:i*12,fill:'forwards'});
  }
 }
 function clearError(field){

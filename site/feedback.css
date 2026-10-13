@@ -1,36 +1,131 @@
 /* Short local card cues; no screen movement or layout animation. */
-:root{--feedback-heal:var(--teal,#a5d7c4);--feedback-damage:var(--pink,#eda0b1)}
+:root{--feedback-heal:#24845a;--feedback-damage:#bd3545;--feedback-gold:#92702b}
+html[data-theme="dark"]{--feedback-heal:#87dfa8;--feedback-damage:#ff929b;--feedback-gold:#efcb83}
 .health-feedback{position:relative;isolation:isolate}
 .health-feedback-wash{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;opacity:0}
 .health-feedback-wash.feedback-damage{background:linear-gradient(135deg,#391421,transparent 90%)}
 .health-feedback-wash.feedback-heal{background:radial-gradient(ellipse at 32% 40%,var(--feedback-heal),transparent 85%)}
-.health-feedback-delta{position:absolute;top:43px;right:12px;z-index:3;max-width:calc(100% - 24px);box-sizing:border-box;padding:3px 7px;border-radius:8px;background:var(--bg);font-family:"List Folio Numerals",Georgia,serif;font-size:18px;line-height:1.1;letter-spacing:.015em;font-weight:500;pointer-events:none;white-space:nowrap;text-align:right}
-.health-feedback-delta.feedback-combined{font-size:14px;padding:0;background:transparent}
+.health-feedback-delta{position:absolute;top:142px;left:50%;z-index:4;max-width:calc(100% - 24px);box-sizing:border-box;padding:0;background:transparent;font-family:"List Combat Numerals",Georgia,serif;font-size:27px;line-height:1;letter-spacing:.01em;font-weight:800;pointer-events:none;white-space:nowrap;text-align:center;opacity:0;transform:translate(-50%,-50%);text-shadow:0 1px 2px var(--bg)}
 .health-feedback-delta.feedback-damage{color:var(--feedback-damage)}
 .health-feedback-delta.feedback-heal{color:var(--feedback-heal)}
 .dice-result[data-feedback-degree] .result-seal{animation:none}
 .dice-result[data-feedback-degree]>b{animation:none;transform:none}
 .dice-result[data-feedback-degree] .result-seal svg>*{transform-box:view-box;transform-origin:60px 60px}
-.dice-result[data-feedback-degree="critical-success"]>h3{color:var(--feedback-heal);border-color:var(--feedback-heal);background:var(--note)}
-.dice-result[data-feedback-degree="critical-failure"]>h3{color:var(--feedback-damage);border-color:var(--feedback-damage);background:var(--note)}
-.feedback-seal-flare{grid-area:1/1;place-self:center;width:var(--result-size,120px);height:var(--result-size,120px);color:var(--feedback-heal);opacity:0;pointer-events:none;z-index:2}
-.feedback-seal-flare svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.25}
+.dice-result[data-feedback-degree="critical-success"]{--feedback-seal:var(--feedback-gold)}
+.dice-result[data-feedback-degree="critical-failure"]{--feedback-seal:var(--feedback-damage)}
+.dice-result[data-feedback-degree] .result-seal{color:var(--feedback-seal);opacity:.9}
+.dice-result[data-feedback-degree]>b{color:var(--feedback-seal)}
+.dice-result[data-feedback-degree]>h3{color:var(--feedback-seal);border-color:var(--feedback-seal);background:var(--note)}
+.feedback-seal-flare,.feedback-seal-fragment,.feedback-seal-ring{grid-area:1/1;place-self:center;width:var(--result-size,120px);height:var(--result-size,120px);color:var(--feedback-seal);opacity:0;pointer-events:none;z-index:2}
+.feedback-seal-flare svg,.feedback-seal-fragment svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.feedback-seal-ring{border:1.5px solid currentColor;border-radius:50%;width:calc(var(--result-size,120px)*.9);height:calc(var(--result-size,120px)*.9)}
+.feedback-seal-ring.feedback-victory{box-shadow:0 0 14px color-mix(in srgb,currentColor 32%,transparent),inset 0 0 8px color-mix(in srgb,currentColor 20%,transparent)}
+.feedback-seal-spark{grid-area:1/1;place-self:center;width:5px;height:5px;background:var(--feedback-seal);opacity:0;pointer-events:none;z-index:2}
+.feedback-seal-spark.feedback-victory{box-shadow:0 0 8px color-mix(in srgb,var(--feedback-seal) 45%,transparent)}
+.feedback-seal-spark.feedback-fracture{width:3px;height:8px}
 .feedback-invalid{border-color:var(--feedback-damage)!important;outline-color:var(--feedback-damage)}
 .feedback-field-error{margin-top:6px;color:var(--feedback-damage);font-size:12px;line-height:1.5}
-@media(prefers-reduced-motion:reduce){.health-feedback-delta{transform:none}.feedback-seal-flare,.health-feedback-wash{display:none}}
+@media(prefers-reduced-motion:reduce){.feedback-seal-flare,.feedback-seal-fragment,.feedback-seal-ring,.feedback-seal-spark,.health-feedback-wash{display:none}}
 
 .feedback-volume{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 14px;padding:14px 16px}
 .feedback-volume label{margin:0;font-size:13px;font-weight:500;color:var(--text)}
 .feedback-volume output{grid-column:2;grid-row:1;color:var(--muted);font-size:12px}
 .feedback-volume input{grid-column:1/-1;min-height:28px;height:28px;padding:0;border:0;background:transparent;accent-color:var(--pink);box-shadow:none}
-.feedback-previews{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 16px}
-.modal .feedback-previews .btn{margin:0;min-height:42px;font-size:12px;white-space:normal}
-.feedback-preview-stage{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:12px;padding:14px 16px;min-height:164px}
-.feedback-preview-health{align-self:stretch;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:14px;min-width:0;border-radius:16px}
-.feedback-preview-title{font-size:11px;color:var(--muted)}
-.feedback-preview-health strong{font-weight:500;font-size:23px;white-space:nowrap}
-.feedback-preview-health strong small{font-size:12px;font-weight:400}
-.feedback-preview-health .health-feedback-delta{top:12px;right:10px;font-size:15px}
-.feedback-preview-roll{margin:0!important;padding:0!important}
-.feedback-preview-roll>h3{grid-column:1/-1;font-size:11px!important;padding:4px!important;margin:4px 0 0!important}
-@media(max-width:350px){.feedback-preview-stage{padding:12px;gap:8px}.feedback-preview-health{padding:10px}.feedback-preview-health strong{font-size:20px}.feedback-previews{padding:12px}}
+
+/* Cinzel, SIL Open Font License 1.1. Digit subset embedded for offline feedback.
+Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+
+*/
+@font-face{font-family:"List Combat Numerals";src:url("assets/fonts/health-numerals.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
