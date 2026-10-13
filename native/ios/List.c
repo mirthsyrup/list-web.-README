@@ -245,8 +245,6 @@ int main(int argc,char **argv) {
     Method(vc,"prefersHomeIndicatorAutoHidden",(void(*)(void))HideHome,"B@:");
     Method(vc,"viewDidLayoutSubviews",(void(*)(void))Layout,"v@:");objc_registerClassPair(vc);
     Class delegate=objc_allocateClassPair(C("NSObject"),"ListDelegate",0);
-    const char *protocols[]={"UIApplicationDelegate","WKNavigationDelegate","WKScriptMessageHandler","WKUIDelegate"};
-    for(int i=0;i<4;i++)class_addProtocol(delegate,objc_getProtocol(protocols[i]));
     Method(delegate,"application:didFinishLaunchingWithOptions:",(void(*)(void))Launch,"B@:@@");
     Method(delegate,"applicationDidBecomeActive:",(void(*)(void))Active,"v@:@");
     Method(delegate,"userContentController:didReceiveScriptMessage:",(void(*)(void))Message,"v@:@@");
@@ -256,5 +254,15 @@ int main(int argc,char **argv) {
     Method(delegate,"webView:didFailProvisionalNavigation:withError:",(void(*)(void))Failed,"v@:@@@");
     Method(delegate,"webViewWebContentProcessDidTerminate:",(void(*)(void))Terminated,"v@:@");
     Method(delegate,"startupTimeout:",(void(*)(void))Timeout,"v@:@");objc_registerClassPair(delegate);
+    /* iOS 27 can walk inherited protocols while class_addProtocol checks
+     * conformance. Finish registration and realize the class before that walk;
+     * the 2.9.3 crash occurred adding WKUIDelegate to a constructing class.
+     * NSObject's inherited +class triggers normal runtime realization. */
+    O0(delegate,"class");
+    const char *protocols[]={"UIApplicationDelegate","WKNavigationDelegate","WKScriptMessageHandler","WKUIDelegate"};
+    for(int i=0;i<4;i++){
+        Id protocol=objc_getProtocol(protocols[i]);
+        if(protocol)class_addProtocol(delegate,protocol);
+    }
     int result=UIApplicationMain(argc,argv,0,String("ListDelegate"));objc_autoreleasePoolPop(pool);return result;
 }

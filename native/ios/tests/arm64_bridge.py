@@ -23,6 +23,7 @@ class Runtime:
             self.uc.mem_write(segment['vmaddr'],self.data[segment['fileoff']:segment['fileoff']+segment['filesize']])
         self.uc.mem_map(0x30000000,0x400000);self.uc.mem_map(0x70000000,0x200000);self.uc.mem_map(0x6fff0000,4096)
         self.objects={};self.next=0x20000000;self.heap=0x30000000;self.classes={};self.selectors={};self.methods={}
+        self.registered=set();self.realized=set();self.protocols={};self.protocol_additions=[];self.missing_protocols=set()
         self.files={};self.evaluations=[];self.effects=[];self.scripts=[];self.calls=[];self.now=100.;self.active=0;self.on_main=True;self.write_ok=True;self.attached=True;self.stop_error=None
         self.defaults=self.obj('NSUserDefaults',{});self.application=self.obj('UIApplication');self.manager=self.obj('NSFileManager');self.content=0;self.window=0;self.web=0;self.controller=0
         self.uc.hook_add(UC_HOOK_CODE,self.hook)
@@ -66,8 +67,19 @@ class Runtime:
                 key=self.cstr(self.reg(1));self.classes[key]=self.obj('Class',key,superclass=self.reg(0));self.result(self.classes[key])
             elif name=='_class_addMethod':
                 key=(self.py(self.reg(0)),self.py(self.reg(1)));self.methods[key]=(self.reg(2),self.cstr(self.reg(3)));self.result(1)
-            elif name in ('_objc_registerClassPair','_objc_autoreleasePoolPop'):self.result()
-            elif name in ('_objc_getProtocol','_class_addProtocol','_objc_autoreleasePoolPush'):self.result(1)
+            elif name=='_objc_registerClassPair':self.registered.add(self.reg(0));self.result()
+            elif name=='_objc_getProtocol':
+                key=self.cstr(self.reg(0));self.protocols.setdefault(key,self.obj('Protocol',key));self.result(0 if key in self.missing_protocols else self.protocols[key])
+            elif name=='_class_addProtocol':
+                cls,protocol=self.reg(0),self.reg(1)
+                assert protocol,'Null protocol passed to class_addProtocol'
+                key=self.py(protocol)
+                # Model the exact startup path identified by the iOS 27 log.
+                if key=='WKUIDelegate':
+                    assert cls in self.registered and cls in self.realized,'WKUIDelegate conformance queried before class registration/realization'
+                self.protocol_additions.append((self.py(cls),key,cls in self.registered and cls in self.realized));self.result(1)
+            elif name=='_objc_autoreleasePoolPop':self.result()
+            elif name=='_objc_autoreleasePoolPush':self.result(1)
             elif name=='_UIApplicationMain':self.result()
             elif name=='_NSTemporaryDirectory':self.result(self.box('/sandbox/tmp'))
             elif name=='_objc_msgSend':self.message()
@@ -80,7 +92,10 @@ class Runtime:
         obj=self.objects[target];kind=obj['kind'];value=obj.get('value');cls=value if kind=='Class' else kind
         self.calls.append((cls,selector))
         result=0
-        if selector in ('init','autorelease','retain'):result=target
+        if selector=='class' and kind=='Class':
+            assert target in self.registered,'Dynamic class messaged before registration'
+            self.realized.add(target);result=target
+        elif selector in ('init','autorelease','retain'):result=target
         elif selector=='release':pass
         elif selector=='alloc':result=self.obj(cls)
         elif selector=='isKindOfClass:':result=kind==self.py(a[0]) or self.py(a[0])=='NSObject'
@@ -204,6 +219,10 @@ def verify(binary,output):
     checks=[];runtime=Runtime(binary)
     old=json.dumps({'format':'list-store','version':1,'sequence':42,'hash':'deadbeef','body':'{"characters":[{"name":"Мираэль🧝🏻"}]}'},ensure_ascii=False)
     runtime.start(old)
+    assert runtime.protocol_additions==[('ListDelegate',name,True) for name in ('UIApplicationDelegate','WKNavigationDelegate','WKScriptMessageHandler','WKUIDelegate')]
+    missing=Runtime(binary);missing.missing_protocols.add('WKUIDelegate');missing.start()
+    assert len(missing.protocol_additions)==3
+    checks.append('all delegate protocols are attached after registration and realization; missing protocol is skipped safely')
     assert set(runtime.objects[runtime.content]['handlers'])=={'exportFile','appStatus','saveState','setTheme','haptic'}
     assert runtime.objects[runtime.web]['loaded']==('/app/Payload/List.app/web/ios-entry.html','/app/Payload/List.app/web')
     snapshots=next(s for s in runtime.scripts if s.startswith('window.__LIST_NATIVE_SNAPSHOTS='));assert json.loads(snapshots.split('=',1)[1][:-1])==[old]
