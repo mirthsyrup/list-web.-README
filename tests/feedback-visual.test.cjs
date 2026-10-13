@@ -6,32 +6,28 @@ function harness(reduced=false){
  const w=dom.window,animations=[],timers=new Map();let nextTimer=0;
  const media={matches:reduced,addEventListener(type,callback){this.callback=callback;}};w.matchMedia=()=>media;
  w.setTimeout=callback=>{const id=++nextTimer;timers.set(id,callback);return id;};w.clearTimeout=id=>timers.delete(id);
- w.Element.prototype.animate=function(frames,options){let reject;const animation={target:this,frames,options,cancelled:false,finished:new Promise((resolve,r)=>{reject=r;}),cancel(){this.cancelled=true;reject(Error('cancel'));}};animations.push(animation);return animation;};
+ w.Element.prototype.animate=function(frames,options){let reject,resolve;const animation={target:this,frames,options,cancelled:false,finished:new Promise((ok,r)=>{resolve=ok;reject=r;}),complete(){resolve();},cancel(){this.cancelled=true;reject(Error('cancel'));}};animations.push(animation);return animation;};
  w.eval(fs.readFileSync(path.join(__dirname,'../site/feedback-visual.js'),'utf8'));
  return {w,api:w.ListFeedbackVisual,animations,timers,media,$:selector=>w.document.querySelector(selector)};
 }
-test('Health cues show actual HP and absorbed temporary HP, never move the card',()=>{
+test('Health numbers show actual total loss and capped gain with no signs, units or background',()=>{
  const h=harness(),anchor=h.$('.health');h.api.emit('damage',{anchor,hpDelta:-3,tempDelta:-5});
- assert.equal(h.$('.health-feedback-delta').textContent,'−3 ОЗ · −5 врем.');
- assert(h.$('.health-feedback-delta').classList.contains('feedback-combined'));
+ assert.equal(h.$('.health-feedback-delta').textContent,'8');assert(h.$('.health-feedback-delta').classList.contains('feedback-damage'));
  assert(h.animations.length);assert(h.animations.every(a=>a.target!==anchor));
  h.api.clear();assert.equal(h.$('.health-feedback-delta'),null);assert.equal(h.timers.size,0);
  h.api.emit('heal',{anchor,hpDelta:0,tempDelta:0});assert.equal(h.animations.filter(a=>!a.cancelled).length,0);
- h.api.emit('damage',{anchor,hpDelta:0,tempDelta:-7});assert.equal(h.$('.health-feedback-delta').textContent,'−7 врем.');
+ h.api.emit('damage',{anchor,hpDelta:0,tempDelta:-7});assert.equal(h.$('.health-feedback-delta').textContent,'7');
+ const css=fs.readFileSync(path.join(__dirname,'../site/feedback.css'),'utf8');assert.match(css,/health-feedback-delta\{[^}]*background:transparent/);
 });
-test('Combined health labels retain large actual values and cannot wrap over the HP number',()=>{
- const h=harness();h.api.emit('damage',{anchor:h.$('.health'),hpDelta:-100000,tempDelta:-100000});
- assert.equal(h.$('.health-feedback-delta').textContent,'−100000 ОЗ · −100000 врем.');
- const css=fs.readFileSync(path.join(__dirname,'../site/feedback.css'),'utf8');
- assert.match(css,/\.health-feedback-delta\{[^}]*white-space:nowrap/);
- assert.match(css,/\.health-feedback-delta\.feedback-combined\{font-size:14px;padding:0;background:transparent\}/);
-});
-test('Combined delta sits between the meter and controls without crossing either during its motion',()=>{
- const h=harness(),anchor=h.$('.health');anchor.innerHTML='<div class="hp"><b>39</b></div><div class="meter"></div><div class="row"></div>';
- anchor.getBoundingClientRect=()=>({top:0});h.$('.meter').getBoundingClientRect=()=>({bottom:136.25});h.$('.meter + .row').getBoundingClientRect=()=>({top:157.25});
- h.api.emit('damage',{anchor,hpDelta:-5,tempDelta:-7});const delta=h.$('.health-feedback-delta');
- assert(Math.abs(parseFloat(delta.style.top)-139.05)<.01);assert.equal(delta.style.fontSize,'14px');
- const motion=h.animations.find(a=>a.target===delta);assert.equal(motion.frames[0].transform,'translateY(0)');assert.equal(motion.frames.at(-1).transform,'translateY(-2px)');
+test('Health number flies a substantial random distance for one second and is removed at completion',async()=>{
+ const h=harness(),anchor=h.$('.health'),endpoints=new Set();
+ for(let i=0;i<6;i++){
+  h.api.emit('damage',{anchor,hpDelta:-5,tempDelta:-7});const delta=h.$('.health-feedback-delta');
+  assert.equal(delta.textContent,'12');const a=h.animations.findLast(a=>a.target===delta);
+  assert.equal(a.options.duration,1000);assert.equal(a.options.fill,'forwards');assert.equal(a.frames.at(-1).opacity,0);
+  endpoints.add(a.frames.at(-1).transform);a.complete();await tick();assert.equal(delta.isConnected,false);assert.equal(h.timers.size,0);
+ }
+ assert(endpoints.size>1);
 });
 test('Rapid health feedback replaces its own effect and expires without leaked nodes or timers',async()=>{
  const h=harness(),anchor=h.$('.health');h.api.emit('damage',{anchor,hpDelta:-5});const first=[...h.animations];
@@ -40,11 +36,11 @@ test('Rapid health feedback replaces its own effect and expires without leaked n
 });
 test('Critical classification follows degree, and failure animates only compass lines',()=>{
  const h=harness(),anchor=h.$('.dice-result');h.api.emit('roll',{anchor,natural:20,total:20});assert.equal(anchor.dataset.feedbackDegree,undefined);assert.equal(h.animations.length,0);
- h.api.emit('roll',{anchor,natural:20,total:20,degree:'Критический провал'});assert.equal(anchor.dataset.feedbackDegree,'critical-failure');assert.equal(anchor.querySelector('h3').textContent,'Критический провал');assert(h.animations.every(a=>a.target.closest('svg')));assert(h.animations.every(a=>a.target!==anchor.querySelector('b')));
+ h.api.emit('roll',{anchor,natural:20,total:20,degree:'Критический провал'});assert.equal(anchor.dataset.feedbackDegree,'critical-failure');assert.equal(anchor.querySelector('h3').textContent,'Критический провал');assert(h.$('.feedback-seal-fragment'));assert.equal(anchor.querySelectorAll('.feedback-seal-spark').length,8);assert(h.animations.every(a=>a.target!==anchor.querySelector('b')));
  h.api.emit('roll',{anchor,degree:'Критический успех'});assert.equal(anchor.dataset.feedbackDegree,'critical-success');assert(h.$('.feedback-seal-flare'));
 });
 test('Reduced motion keeps informative labels but creates no animated flash',()=>{
- const h=harness(true);h.api.emit('heal',{anchor:h.$('.health'),hpDelta:3});assert.equal(h.$('.health-feedback-delta').textContent,'+3 ОЗ');assert.equal(h.$('.health-feedback-wash'),null);
+ const h=harness(true);h.api.emit('heal',{anchor:h.$('.health'),hpDelta:3});assert.equal(h.$('.health-feedback-delta').textContent,'3');assert.equal(h.$('.health-feedback-wash'),null);assert.equal(h.$('.health-feedback-delta').style.opacity,'1');
  h.api.emit('roll',{anchor:h.$('.dice-result'),degree:'Критический успех'});assert.equal(h.$('.dice-result h3').textContent,'Критический успех');assert.equal(h.$('.feedback-seal-flare'),null);assert.equal(h.animations.length,0);
 });
 test('Inline error preserves previous descriptions and clears only when its field changes',()=>{
