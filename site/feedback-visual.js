@@ -81,7 +81,7 @@ function roll(kind,detail){
  const anchor=detail.anchor;if(!anchor?.isConnected||document.hidden)return;
  anchor.dataset.feedbackDegree=success?'critical-success':'critical-failure';criticalMarks.add(anchor);
  let label=anchor.querySelector(':scope > h3');
- if(!label){label=document.createElement('h3');label.className='feedback-roll-label';anchor.append(label);}label.textContent=degree;
+ if(!label){label=document.createElement('h3');label.className='feedback-roll-label';anchor.append(label);}label.textContent=detail.label||degree;
  const seal=anchor.querySelector('.result-seal');if(!seal||quiet())return;
  const record=own(anchor,1200),svg=seal.querySelector('svg');if(!record)return;if(!svg){finish(record);return;}record.critical=true;clearTimeout(record.timer);record.timer=setTimeout(()=>settleCritical(record),1150);
  const ring=node(record,'feedback-seal-ring '+(success?'feedback-victory':'feedback-fracture'));
