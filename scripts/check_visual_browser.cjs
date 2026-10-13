@@ -20,6 +20,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   const snapshot=async name=>{await finite();await clean();await page.screenshot({path:path.join(out,name+'.png')});};
   const marker=async()=>{await finite();return page.evaluate(()=>{const a=document.querySelector('.nav button.on').getBoundingClientRect(),b=document.querySelector('.nav-active-surface').getBoundingClientRect();return [Math.abs(a.left-b.left),Math.abs(a.top-b.top),Math.abs(a.width-b.width),Math.abs(a.height-b.height)];});};
   const compass=async selector=>page.locator(selector).first().evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{width:r.width,height:r.height,fill:s.fill,stroke:s.stroke};});
+  const composition=()=>page.evaluate(()=>{const b=document.querySelector('.dice-result>b'),seal=document.querySelector('.dice-result .result-seal'),caption=b.parentElement.querySelector('p'),n=b.getBoundingClientRect(),s=seal.getBoundingClientRect(),style=getComputedStyle(b);return{centerDelta:[Math.abs(n.x+n.width/2-s.x-s.width/2),Math.abs(n.y+n.height/2-s.y-s.height/2)],numberWidth:n.width,innerDiameter:s.width*.7,fontSize:parseFloat(style.fontSize),fontWeight:Number(style.fontWeight),sameInk:style.color===getComputedStyle(seal).color,captionClear:caption.getBoundingClientRect().top>=s.bottom};});
+  const checkComposition=async()=>{await finite();const c=await composition();assert(c.centerDelta.every(d=>d<.5),JSON.stringify(c));assert(c.fontWeight<=450);assert(c.sameInk);assert(c.numberWidth<c.innerDiameter);assert(c.captionClear);return c;};
   await snapshot('boot');
   const bootstrap=await page.evaluate(()=>({zipLoader:!!window.__ZIP_URLS,styles:[...document.querySelectorAll('link[rel="stylesheet"]')].map(l=>({href:l.href,loaded:!!l.sheet})),nav:[...document.querySelectorAll('.nav button')].map(b=>({tab:b.dataset.tab,top:b.getBoundingClientRect().top})),emblem:(()=>{const e=document.querySelector('.empty-emblem svg'),r=e?.getBoundingClientRect();return e?{width:r.width,height:r.height,fill:getComputedStyle(e).fill}:null;})()}));
   fs.writeFileSync(path.join(out,'bootstrap.json'),JSON.stringify(bootstrap,null,2)+'\n');
@@ -46,16 +48,24 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   const button=page.locator('[data-action="health"]').first();await button.focus();await page.keyboard.press('Enter');await page.locator('#health-amount').waitFor();
   await page.locator('#health-amount').fill('5');await page.locator('[data-action="health-save"]').click();await finite();assert.equal(await page.locator('.hp>b').textContent(),'34');
   await page.waitForTimeout(500);assert.equal(await page.locator('.ink-surface').count(),0);
-  await page.locator('[data-action="check"]').first().click();await page.evaluate(()=>{Rules.roll=()=>17;});
+  await page.locator('[data-action="check"]').first().click();await page.evaluate(()=>{Rules.roll=()=>4;});
   const bonus=Number(await page.locator('[data-action="table-roll"]').getAttribute('data-bonus'));await page.locator('[data-action="table-roll"]').click();
-  assert.equal(await page.locator('#table-check-result .dice-result>b').textContent(),String(17+bonus));assert(await page.locator('#table-check-result').innerText().then(t=>t.includes('На кости 17')));
+  assert.equal(await page.locator('#table-check-result .dice-result>b').textContent(),String(4+bonus));assert(await page.locator('#table-check-result').innerText().then(t=>t.includes('На кости 4')));
   assert.equal(await page.locator('.result-seal[aria-hidden="true"]').count(),1);await snapshot('result-light');
   const rollSeal=await compass('.result-seal .folio-seal');assert.equal(rollSeal.fill,'none');assert.equal(rollSeal.width,120);assert.equal(rollSeal.height,120);
-  assert.equal(await page.locator('.result-seal').evaluate(e=>getComputedStyle(e).position),'absolute');
-  await page.locator('[data-action="close"]').first().click();await page.locator('[data-action="settings"]').click();await page.locator('[data-action="theme-toggle"]').click();await page.locator('[data-action="close"]').click();await finite();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');await snapshot('sheet-dark');
+  const rollComposition=await checkComposition(),numberLayouts=[];
+  for(const text of ['1','12','888','-12','12345']){await page.locator('.dice-result>b').evaluate((b,value)=>{b.textContent=value;b.style.setProperty('--result-digits',String(value.length));},text);numberLayouts.push({text,...await checkComposition()});}
+  await page.locator('.dice-result>b').evaluate((b,value)=>{b.textContent=value;b.style.setProperty('--result-digits',String(value.length));},String(4+bonus));
+  await page.locator('[data-action="close"]').first().click();await page.locator('[data-action="settings"]').click();await snapshot('settings-light');
+  const sun=await page.locator('.theme-sun').evaluate(e=>{const a=e.getBoundingClientRect(),b=e.parentElement.getBoundingClientRect();return{width:a.width,height:a.height,centerDelta:[Math.abs(a.x+a.width/2-b.x-b.width/2),Math.abs(a.y+a.height/2-b.y-b.height/2)],hidden:e.getAttribute('aria-hidden')};});
+  assert.equal(sun.width,15);assert.equal(sun.height,15);assert(sun.centerDelta.every(d=>d<.5));assert.equal(sun.hidden,'true');
+  await page.locator('[data-action="theme-toggle"]').click();await snapshot('settings-dark');
+  assert.equal(await page.locator('.theme-sun').count(),0);assert.equal(await page.locator('[data-action="theme-toggle"] .switch-track>span').evaluate(e=>getComputedStyle(e,'::after').fontSize),'13px');
+  await page.locator('[data-action="close"]').click();await finite();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');await snapshot('sheet-dark');
   const darkEmpty=await compass('.empty-emblem .folio-seal');assert.equal(darkEmpty.fill,'none');assert.equal(darkEmpty.width,34);
   await page.locator('[data-action="check"]').first().click();await page.locator('[data-action="table-roll"]').click();await snapshot('result-dark');
   const darkSeal=await compass('.result-seal .folio-seal');assert.equal(darkSeal.fill,'none');assert.equal(darkSeal.width,120);
+  await checkComposition();
   await page.locator('[data-action="close"]').first().click();await finite();
   const layouts=[];
   for(const width of [320,390,1280]){await page.setViewportSize({width,height:900});await finite();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);for(const tab of ['sheet','abilities','bag','catalog']){await page.locator(`[data-tab="${tab}"]`).click();const delta=await marker();assert(delta.every(x=>x<1),JSON.stringify({width,tab,delta}));}layouts.push({width,allFourMarkersMatchButtons:true,noHorizontalOverflow:true});}
@@ -68,7 +78,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   assert.equal(await page.locator('.ink-surface').count(),0);assert(await page.locator('html').getAttribute('data-ui-paused').then(x=>x!==null));
   await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
   assert.deepEqual(errors,[]);assert.deepEqual(failedAssets,[]);
-  const report={passed:true,entry:url,zipLoader:bootstrap.zipLoader,stylesLoaded:bootstrap.styles.length,emptySeal,rollSeal,layouts,idleSheetLayouts:idleLayouts,checks:['all release styles load through public entry','four mobile tabs share one row','empty and dice compasses are bounded outlines','heartbeat and ink styles applied','typed input unchanged','keyboard action and HP persistence','roll total stays exact','decorations hidden from accessibility tree','pointer feedback cleans up','light and dark layouts','all navigation indicators align after resize','reduced motion stops decorative motion','visibility event clears overlays'],errors,failedAssets,limitation:'Chromium HTTP check of the ZIP entry; physical iPhone/Android and actual device FPS not measured.'};
+  const report={passed:true,entry:url,zipLoader:bootstrap.zipLoader,stylesLoaded:bootstrap.styles.length,emptySeal,rollSeal,rollComposition,numberLayouts,sun,layouts,idleSheetLayouts:idleLayouts,checks:['all release styles load through public entry','four mobile tabs share one row','empty and dice compasses are bounded outlines','number and seal share center and ink; signed/large totals fit','sun is centered and legible; moon keeps its size','heartbeat and ink styles applied','typed input unchanged','keyboard action and HP persistence','roll total stays exact','decorations hidden from accessibility tree','pointer feedback cleans up','light and dark layouts','all navigation indicators align after resize','reduced motion stops decorative motion','visibility event clears overlays'],errors,failedAssets,limitation:'Chromium HTTP check of the ZIP entry; physical iPhone/Android and actual device FPS not measured.'};
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));await context.close();
  }finally{await browser.close();if(server)await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});
