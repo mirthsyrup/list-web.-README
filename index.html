@@ -20,10 +20,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const status=document.getElementById('status');
   const setStatus=(t)=>{status.textContent=t};
   try{
-    setStatus('Загружаем Лист 2.9.6…');
+    setStatus('Загружаем Лист 2.9.7…');
     let zip,lastError;
     for(let attempt=0;attempt<3;attempt++){
-      try{const res=await fetch('list-site-2.9.6.zip'+(attempt?'?retry='+Date.now():''),{cache:attempt?'reload':'default'});
+      try{const res=await fetch('list-site-2.9.7.zip'+(attempt?'?retry='+Date.now():''),{cache:attempt?'reload':'default'});
         if(!res.ok)throw new Error('HTTP '+res.status);
         zip=await JSZip.loadAsync(await res.arrayBuffer());break;
       }catch(err){lastError=err;setStatus('Повторяем загрузку…');if(attempt<2)await new Promise(r=>setTimeout(r,700));}
@@ -97,11 +97,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
 
     let html=await text('index.html');
-    html=html.replace(/<link\s+rel=["']manifest["'][^>]*>/ig,'');
+    html=html.replace(/<link\s+rel=["']manifest["'][^>]*>/ig,'<link rel="manifest" href="manifest.webmanifest">');
     html=html.replace(/(src|href)=["']([^"']+)["']/g,(m,a,p)=>objectUrls[p]?`${a}="${objectUrls[p]}"`:m);
     const zipMap={}; for(const p of dataPaths) zipMap[p]=objectUrls[p];
     const closeTag='<'+'/script>';
-    html=html.replace('<head>','<head><script>window.__ZIP_URLS='+JSON.stringify(zipMap)+closeTag);
+    html=html.replace('<head>','<head><script>window.__ZIP_URLS='+JSON.stringify(zipMap)+';window.__LIST_OFFLINE_WORKER=new URL("sw.js",location.href).href;'+closeTag);
 
     setStatus('Открываем интерфейс…');
     document.open(); document.write(html); document.close();
