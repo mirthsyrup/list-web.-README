@@ -240,3 +240,28 @@ html[data-theme] .modal .progression>summary{color:#704620}
 html[data-theme] .ability-group>summary,
 html[data-theme] .ability-group>summary:is(:hover,:active,:focus,:focus-visible){color:#dfc7a1;opacity:1}
 html[data-theme] .ability-group>summary::after{color:#dfc7a1;opacity:1}
+
+/* Painted matte materials apply to shared controls throughout the fantasy copy. */
+html[data-theme]{--control-paper:url('assets/control-parchment.png');--control-leather:url('assets/control-leather.png')}
+html[data-theme] :is(.btn,.chip,.pill,.catalog-filter-button){background:#e0c49a var(--control-paper) center/220px 220px repeat;color:#352414;border:1px solid #977044;border-image:none;border-radius:3px;box-shadow:0 1px 2px #24170c44;}
+html[data-theme] :is(.btn.primary,.chip.on,.pill.on,.catalog-filter-button.active){background-color:#ba9158;background-image:var(--control-paper);background-blend-mode:multiply;color:#fff0d0;border-color:#76502b;box-shadow:0 1px 2px #24170c55;text-shadow:0 1px #43271355}
+html[data-theme] :is(.btn.ghost,.btn.soft,.btn.danger){background:#4b2f1d var(--control-leather) center/220px 220px repeat;color:#efddbc;border-color:#89613a;box-shadow:0 1px 2px #160d0844}
+html[data-theme] .quick-button{background:#e0c49a var(--control-paper) center/220px 220px repeat!important;box-shadow:0 1px 2px #51311644;text-shadow:none}
+html[data-theme] :is(input:not([type=checkbox]):not([type=range]),textarea,select),
+html[data-theme] .modal :is(input:not([type=checkbox]):not([type=range]),textarea,select){background:#f3e2c3 var(--control-paper) center/250px 250px repeat;background-blend-mode:normal;color:#332414;border:1px solid #9c7648;border-radius:3px;box-shadow:inset 0 1px 3px #53361925}
+html[data-theme] :is(.section,.sheet-block-header){background:#50321e var(--control-leather) center/240px 240px repeat;border-color:#785637;box-shadow:0 2px 3px #160d0855}
+html[data-theme] .modal .settings-panel .btn{background:#e0c49a var(--control-paper) center/220px 220px repeat;box-shadow:none}
+html[data-theme] .modal :is(.contact-name,.contact-group-empty,.journal-entry,.journal-empty){background:#e0c49a var(--control-paper) center/250px 250px repeat;box-shadow:none}
+html[data-theme] .modal .note{background:#d4b787 var(--control-paper) center/250px 250px repeat;background-blend-mode:multiply;box-shadow:none}
+html[data-theme] .modal :is(.usage-card,.equipment-preview){background:#e0c49a var(--control-paper) center/250px 250px repeat;box-shadow:none}
+html[data-theme] input[type=checkbox]{appearance:none;-webkit-appearance:none;background:#e0c49a var(--control-paper) center/80px 80px repeat;border:1px solid #8e663b;border-radius:3px;display:inline-grid;place-content:center;vertical-align:middle}
+html[data-theme] input[type=checkbox]:checked{background-color:#9d7746;background-blend-mode:multiply}
+html[data-theme] input[type=checkbox]:checked:after{content:'✓';color:#fff0d0;font:700 16px/1 Georgia,serif}
+html[data-theme] input[type=checkbox]:focus-visible{outline:2px solid #a77a42;outline-offset:2px}
+html[data-theme] .level{background:#50321e var(--control-leather) center/180px 180px repeat;box-shadow:inset 0 0 0 3px #2e2015,0 2px 3px #0006}
+html[data-theme] .attack{background:#ba9158 var(--control-paper) center/220px 220px repeat;background-blend-mode:multiply;color:#fff0d0;border:1px solid #76502b;border-radius:3px}
+html[data-theme] :is(.switch,.switch-track){background:#50321e var(--control-leather) center/100px 100px repeat;box-shadow:inset 0 1px 3px #160b0644}
+html[data-theme] .switch.on,html[data-theme] .setting-switch[aria-checked=true] .switch-track{background:#ba9158 var(--control-paper) center/100px 100px repeat;background-blend-mode:multiply}
+html[data-theme] .switch:before,html[data-theme] .switch.on:before,html[data-theme] .switch-track>span,html[data-theme] .setting-switch[aria-checked=true] .switch-track>span{background:#e0c49a var(--control-paper) center/80px 80px repeat;box-shadow:0 1px 2px #0005}
+html[data-theme] .modal .journal-check span{background:#e0c49a var(--control-paper) center/80px 80px repeat}
+html[data-theme] .modal .journal-check[aria-checked=true] span{background-color:#9d7746;background-blend-mode:multiply}
