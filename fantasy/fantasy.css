@@ -232,3 +232,11 @@ html[data-theme] .modal .contact-drop-marker{background:#c5a27244;border-color:#
 html[data-theme] .fantasy-wallet{display:block;margin-bottom:21px;padding:8px 10px 12px;text-align:left}
 
 html[data-theme] .fantasy-wallet-entry small{font-size:11px;color:#60452b}
+
+/* Readable labels on leather and parchment, including collapsed details. */
+html[data-theme]{--lavender:#c5a272;--lavender-soft:#70503233}
+html[data-theme] .modal{--lavender:#704620;--lavender-soft:#b28a4d22}
+html[data-theme] .modal .progression>summary{color:#704620}
+html[data-theme] .ability-group>summary,
+html[data-theme] .ability-group>summary:is(:hover,:active,:focus,:focus-visible){color:#dfc7a1;opacity:1}
+html[data-theme] .ability-group>summary::after{color:#dfc7a1;opacity:1}
