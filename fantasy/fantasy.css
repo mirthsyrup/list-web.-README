@@ -165,3 +165,56 @@ html[data-theme] .quick-button:before{height:48px}
 html[data-theme] .quick-button{font-size:10.5px;letter-spacing:-.15px;line-height:1.2}
 
 html[data-theme] .result-count{color:#c9b697}
+
+/* Painted objects replace the flat decorative pictograms. */
+.fantasy-art{display:inline-block;flex-shrink:0;width:26px;height:26px;background-image:url('assets/painted-icons.png');background-size:400% 400%;background-repeat:no-repeat;vertical-align:middle}
+.art-key{background-position:0 0}.art-gear{background-position:33.3333% 0}.art-book{background-position:66.6667% 0}.art-heart{background-position:100% 0}
+.art-shield{background-position:0 33.3333%}.art-eye{background-position:33.3333% 33.3333%}.art-boot{background-position:66.6667% 33.3333%}.art-die{background-position:100% 33.3333%}
+.art-hero{background-position:0 66.6667%}.art-gold{background-position:33.3333% 66.6667%}.art-silver{background-position:66.6667% 66.6667%}.art-copper{background-position:100% 66.6667%}
+.art-buckle{background-position:0 100%}.art-bag{background-position:33.3333% 100%}.art-sword{background-position:66.6667% 100%}.art-quill{background-position:100% 100%}
+html[data-theme] .topbar .fantasy-art{width:31px;height:31px;filter:drop-shadow(0 2px 1px #0007)}
+html[data-theme] .topbar [data-action=settings]{filter:none}
+html[data-theme] .topbar:after{content:none;display:none}
+html[data-theme] .stat .fantasy-art{position:absolute;right:3px;top:1px;width:24px;height:24px}
+html[data-theme] .health .head .fantasy-art{width:24px;height:24px}
+html[data-theme] .weapon-icon{background:transparent;border:0;border-radius:0;box-shadow:none}
+html[data-theme] .weapon-icon .fantasy-art{width:37px;height:37px}
+html[data-theme] .nav button .fantasy-art,html[data-theme] .nav button.on .fantasy-art{width:40px;height:40px;padding:0;box-sizing:content-box;border:0;border-radius:0;box-shadow:none;background-color:transparent;background-image:url('assets/painted-icons.png');background-size:400% 400%}
+html[data-theme] .nav button.on .fantasy-art{filter:drop-shadow(0 0 4px #b9853a55)}
+html[data-theme] .pip,html[data-theme] .pip.on{background:none;border:0;border-radius:0;box-shadow:none;width:36px;height:40px;padding:0}
+html[data-theme] .pip .fantasy-art{width:36px;height:36px;filter:grayscale(.75) brightness(.6);opacity:.75}
+html[data-theme] .pip.on .fantasy-art{filter:none;opacity:1}
+html[data-theme] .hero:before{right:13px;bottom:-10px;width:49px;height:37px;border:0;border-radius:0;box-shadow:none;background:url('assets/painted-icons.png') 0 100%/400% 400% no-repeat;transform:rotate(-14deg)}
+html[data-theme] .shell:after{top:84px;right:-2px;width:29px;height:157px;background:url('assets/torch.png') center/auto 100% no-repeat}
+html[data-theme] .topbar{background-size:100% auto;overflow:hidden}
+html[data-theme] .topbar:before{content:none;display:none}
+/* Mobile Safari retains :hover after a tap; fold controls must stay transparent. */
+html[data-theme] .ib:is(:hover,:active,:focus,:focus-visible){background:transparent;box-shadow:none}
+html[data-theme] .sheet-toggle:is(:hover,:active,:focus),html[data-theme] .ability-group>summary:is(:hover,:active,:focus){background:transparent;color:inherit}
+html[data-theme] .sheet-block-header .ib,html[data-theme] .section .ib{color:#dfc7a1}
+html[data-theme] .modal .usage-card,html[data-theme] .modal .equipment-preview{--teal:#466440;--teal-soft:#dfc498;--lavender:#6c4424;background:linear-gradient(#e6d0aa,#d8bc8f);color:#2d2115;border:1px solid #9e794a;border-radius:4px;box-shadow:inset 0 1px #f5e4c5}
+html[data-theme] .modal .usage-card :is(h3,dt,dd,p,b){color:#3c2a18}
+html[data-theme] .modal .usage-card dt{color:#60452b}
+html[data-theme] .modal .usage-card .rule-link{color:#365b39;text-decoration-color:#365b3966}
+html[data-theme] .modal .rules-text .rule-section-heading{color:#6b4424}
+html[data-theme] .fantasy-wallet{display:block;margin-bottom:21px;padding:8px 10px 12px;text-align:left}
+.fantasy-wallet-title{display:block;font-size:12px;color:#62482b;margin-bottom:4px}
+.fantasy-wallet-coins{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fantasy-wallet-entry{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fantasy-coin{position:relative;display:block;width:70px;height:70px}
+.fantasy-coin>.fantasy-art{position:absolute;inset:0;width:100%;height:100%}
+.fantasy-coin>b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 clamp(10px,calc(26px - var(--coin-digits)*2px),24px)/1 Georgia,serif;color:#392410;text-shadow:0 1px #f0ddab88;max-width:48px;white-space:nowrap}
+.fantasy-wallet-entry:nth-child(2) .fantasy-coin>b{color:#2c2924;text-shadow:0 1px #f4efe299}
+.fantasy-wallet-entry:nth-child(3) .fantasy-coin>b{color:#411f10;text-shadow:0 1px #e9bd8d88}
+html[data-theme] .fantasy-wallet-entry small{font-size:11px;color:#60452b}
+
+html[data-theme] .hero>.row{padding-right:16px}
+html[data-theme] .shell:after{content:none}
+html[data-theme] .shell:has(.page-content[data-scene$=":sheet"]):after{content:''}
+html[data-theme] .ib[aria-expanded]{appearance:none;-webkit-appearance:none;background:transparent}
+html[data-theme] .nav button .art-quill{background-position:100% 100%}
+html[data-theme] .nav button .art-hero{background-position:0 66.6667%}
+html[data-theme] .nav button .art-bag{background-position:33.3333% 100%}
+html[data-theme] .nav button .art-book{background-position:66.6667% 0}
+.fantasy-coin>.fantasy-art{clip-path:circle(44% at 50% 48%)}
+html[data-theme] .section .ib[aria-expanded] .icon,html[data-theme] .sheet-block-header .ib[aria-expanded] .icon{color:#dfc7a1;stroke:#dfc7a1}
