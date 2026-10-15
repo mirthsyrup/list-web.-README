@@ -204,7 +204,7 @@ document.addEventListener('change',e=>{if(e.target.id.startsWith('background-boo
 document.addEventListener('click',async e=>{if(e.target.classList.contains('backdrop')){backOrClose();return;}const el=e.target.closest('[data-action]');if(!el||el.disabled)return;const a=el.dataset.action,d=el.dataset,c=cur();try{if(a==='table-undo'||a==='table-actions'||a==='table-filter'||a==='sheet-collapse')return;if(Photo.handle(a))return;if(await CatalogFilters.handle(a,d))return;if(a==='design-set'){await switchDesign(d.design);return;}if(a==='theme-toggle'){ListTheme.toggle();settings();return;}if(await Archetypes.handle(a,d))return;if(await Upgrade.handle(a,d))return;if(await Table.handle(a,d))return;if(await V.handle(a,d))return;switch(a){
 case 'close':backOrClose();break;
 case 'feedback-toggle':{if(!['sound','haptics','visual'].includes(d.key))break;const value=!ListFeedback.prefs()[d.key];ListFeedback.configure({[d.key]:value});el.setAttribute('aria-checked',String(value));break;}
-case 'storage-warning-dismiss':storageWarningDismissed=true;$('#storage-warning')?.remove();break;case 'tab':if(tab==='catalog')rememberCatalog();tabPositions[tab]=window.scrollY;close();tab=d.tab;render();window.scrollTo(0,tab==='catalog'?restoreCatalog():tabPositions[tab]||0);if(tab==='catalog'){const requested=category;await load(requested);if(tab==='catalog'&&category===requested){render();window.scrollTo(0,restoreCatalog());}}break;
+case 'storage-warning-dismiss':storageWarningDismissed=true;$('#storage-warning')?.remove();break;case 'tab':if(d.tab===tab){tabPositions[tab]=0;window.scrollTo({top:0,left:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});break;}if(tab==='catalog')rememberCatalog();tabPositions[tab]=window.scrollY;close();tab=d.tab;render();window.scrollTo(0,tab==='catalog'?restoreCatalog():tabPositions[tab]||0);if(tab==='catalog'){const requested=category;await load(requested);if(tab==='catalog'&&category===requested){render();window.scrollTo(0,restoreCatalog());}}break;
 case 'bag-clear':bagQuery='';$('#bag-search').value='';ListMotion.list($('#bag-results'),bagRows());$('#bag-clear').hidden=true;$('#bag-search').focus({preventScroll:true});break;
 case 'catalog-clear':query='';limit=50;$('#catalog-search').value='';ListMotion.list($('#catalog-results'),catalogResults());$('#catalog-search').focus({preventScroll:true});updateCatalogInput();break;
 case 'recent-open':await load(d.cat);await detail(d.id);break;
@@ -257,7 +257,7 @@ case 'backup':{const copies=Store.history();open('Резервные копии'
 case 'backup-now':Store.snapshot(S,'Сохранено вручную');close();toast('Резервная копия создана.');break;
 case 'backup-preview':{const restored=Store.restore(d.id);open('Восстановить копию?',note('В копии: '+restored.characters.length+' персонажей. Текущие листы будут заменены; их копия сохранится для отмены.'),btn('Отмена','close','','ghost')+btn('Восстановить','backup-apply',`data-id="${esc(d.id)}"`,'primary'),'backup-preview');break;}
 case 'backup-apply':{const restored=Store.restore(d.id);Store.snapshot(S,'До восстановления');S={...restored,dirty:true};save();close();render();toast('Копия восстановлена.');break;}
-case 'ability-view':abilityView=d.view==='usage'?'usage':'source';render();break;case 'about':open('Патфайндер 2: Лист персонажа · версия 2.9.11',`<p class="subtitle">Интерактивный лист персонажа на русском языке.</p><div class="rules-text">В справочнике 16 569 переведённых записей: классы, родословные, наследия, предыстории, способности, архетипы, заклинания, предметы и действия. Есть ремастер и материалы ранних изданий.
+case 'ability-view':abilityView=d.view==='usage'?'usage':'source';render();break;case 'about':open('Патфайндер 2: Лист персонажа · версия 2.9.12',`<p class="subtitle">Интерактивный лист персонажа на русском языке.</p><div class="rules-text">В справочнике 16 569 переведённых записей: классы, родословные, наследия, предыстории, способности, архетипы, заклинания, предметы и действия. Есть ремастер и материалы ранних изданий.
 
 Это не исчерпывающий архив всего изданного. 49 записей исходной базы без русского названия пропущены. Некоторые переводы неполны. Совпадение названий и совместимость ранних вариантов проверяй с ведущим.
 
@@ -293,3 +293,9 @@ render();Promise.all([...new Set(['feats','spells','actions',...(tab==='catalog'
 
 // Coin shortcuts must not focus number fields or summon the software keyboard.
 document.addEventListener('pointerdown',e=>{if(e.target.closest('[data-action="coin-step"]'))e.preventDefault();});
+
+// Keep editing menus available in fields, suppress long-press browser menus elsewhere.
+document.addEventListener('contextmenu',event=>{
+ if(!window.NativeBridge&&!window.webkit?.messageHandlers?.saveState)return;
+ if(!event.target.closest('input,textarea,[contenteditable]:not([contenteditable="false"])'))event.preventDefault();
+});
