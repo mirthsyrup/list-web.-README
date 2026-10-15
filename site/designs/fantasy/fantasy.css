@@ -296,3 +296,16 @@ html[data-design="fantasy"][data-theme] .modal .journal-check[aria-checked=true]
 html[data-design="fantasy"][data-theme] .quick-grid {display: flex; flex-wrap: wrap; gap: 8px; border: 0; border-image: none; background: none; box-shadow: none; padding: 0; margin-bottom: 0;}
 html[data-design="fantasy"][data-theme] .quick-button {display: inline-flex; flex-direction: row; flex-wrap: wrap; gap: 8px; min-height: 42px; max-width: 100%; padding: 9px 12px; font-size: 12px; text-align: left; letter-spacing: normal;}
 html[data-design="fantasy"][data-theme] .quick-button .action-cost {display: inline-flex; color: inherit;}
+
+/* Brushed silver for the welcome mark and remaining fixed-color highlights. */
+html[data-design="fantasy"] .fantasy-welcome-mark{
+ display:block;width:92px;height:92px;margin:0 auto 24px;
+ background:repeating-linear-gradient(102deg,#fff3 0 1px,#26323818 1px 2px,transparent 2px 5px),linear-gradient(135deg,#7a8589 0%,#c5cbca 25%,#edece3 44%,#a2adae 62%,#d2d6d0 80%,#8b9698 100%);
+ -webkit-mask:url("../../brand.svg") center/contain no-repeat;
+ mask:url("../../brand.svg") center/contain no-repeat;
+}
+html[data-design="fantasy"][data-theme] :is(.condition-card.active,.effect-card.active){border-color:#919b9c}
+html[data-design="fantasy"][data-theme] :is(.catalog-search,.bag-search)::before{border-color:#bac3c2;box-shadow:0 0 7px #b8c1c133;animation-name:fantasy-search-outline}
+@keyframes fantasy-search-outline{0%,100%{opacity:.12}50%{opacity:.28}}
+html[data-design="fantasy"][data-theme] :is(input,textarea,select):focus{border-color:#8e999a;box-shadow:0 0 0 2px #b8c1c133}
+html[data-design="fantasy"][data-theme] .pill.pink{background:#b8c1c112;border-color:#a4afae66;color:var(--text)}
