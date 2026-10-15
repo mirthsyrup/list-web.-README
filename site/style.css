@@ -276,3 +276,8 @@ details{display:flow-root}
 .roll-history-panel>summary{padding:14px 0;font-weight:600;color:var(--muted);cursor:pointer}
 .roll-history-list{max-height:55dvh;overflow:auto;overscroll-behavior:contain;padding-bottom:8px}
 .dice-formula{display:block;text-align:center;font-variant-numeric:tabular-nums;line-height:1.5;letter-spacing:normal;margin:16px 0 0}
+
+.design-choice{padding:14px 16px;border-bottom:1px solid var(--line)}
+.design-choice>b{display:block;font-size:14px;margin-bottom:10px}
+.design-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.design-options>.btn{min-width:0;min-height:44px;padding:10px 5px;font-size:13px;overflow-wrap:anywhere}

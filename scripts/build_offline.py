@@ -1,4 +1,4 @@
-"""Build separate offline caches for the public loader and both visual versions."""
+"""Build offline caches for the unified app, direct entry and legacy redirect."""
 from pathlib import Path
 import json
 import re
@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def resources(directory):
     return sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / directory).rglob('*')
                   if p.is_file() and p.name not in ('sw.js', 'README.md')
-                  and '/assets/sounds/' not in p.as_posix() and p.suffix != '.ttf')
+                  and '/assets/sounds/' not in p.as_posix())
 
 
 def worker(cache, files):
@@ -47,7 +47,7 @@ def build():
         relative += ['./']
         (ROOT / directory / 'sw.js').write_text(worker('list-' + directory + '-' + version, relative))
     archive = re.search(r"fetch\('([^']+\.zip)'", (ROOT / 'index.html').read_text())[1]
-    (ROOT / 'sw.js').write_text(worker('list-public-' + version, ['./', 'index.html', 'manifest.webmanifest', archive] + site))
+    (ROOT / 'sw.js').write_text(worker('list-public-' + version, ['./', 'index.html', 'manifest.webmanifest', 'fantasy/', 'fantasy/index.html', archive] + site))
 
 
 if __name__ == '__main__':

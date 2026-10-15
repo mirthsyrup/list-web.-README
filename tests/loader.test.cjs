@@ -18,7 +18,7 @@ test('Public ZIP loader applies all release styles, boots feedback and preserves
     beforeParse(win){
       w=win;win.setImmediate=setImmediate;win.clearImmediate=clearImmediate;win.Blob=Blob;
       win.URL.createObjectURL=b=>{const url='blob:https://mirthsyrup.github.io/'+ ++id;blobs.set(url,b);return url;};
-      win.fetch=async url=>{requested.push(url);return{ok:true,arrayBuffer:async()=>win.Uint8Array.from(bytes).buffer};};
+      win.fetch=async url=>{requested.push(url);return{ok:true,arrayBuffer:async()=>{const data=new win.Uint8Array(bytes.length);data.set(bytes);return data.buffer;}};};
       win.matchMedia=()=>({matches:true,addEventListener(){}});win.scrollTo=()=>{};win.scrollBy=()=>{};
     }
   });
@@ -34,7 +34,7 @@ test('Public ZIP loader applies all release styles, boots feedback and preserves
     assert(w.document.querySelector('script[src]').src.startsWith('blob:'));
     assert.equal(typeof w.ListFeedback?.emit,'function');
     assert.equal(typeof w.ListFeedbackVisual?.error,'function');
-    const styles=[...w.document.querySelectorAll('link[rel="stylesheet"]')];assert.equal(styles.length,4);
+    const styles=[...w.document.querySelectorAll('link[rel="stylesheet"]')];assert.equal(styles.length,5);
     for(const link of styles){assert(link.href.startsWith('blob:'),'Every stylesheet must be resolved from the release ZIP');assert(link.sheet?.cssRules.length>0,'Every stylesheet must actually load');}
     const holder=w.document.createElement('div');holder.innerHTML=w.ListVisual.seal;w.document.body.append(holder);
     assert.equal(w.getComputedStyle(holder.firstChild).fill,'none','The compass must be an outline');
