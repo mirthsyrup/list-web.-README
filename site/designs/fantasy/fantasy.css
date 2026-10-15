@@ -213,7 +213,7 @@ html[data-design="fantasy"][data-theme] .nav button.on .fantasy-art {filter: dro
 html[data-design="fantasy"][data-theme] .pip, html[data-design="fantasy"][data-theme] .pip.on {background: none; border: 0; border-radius: 0; box-shadow: none; width: 36px; height: 40px; padding: 0;}
 html[data-design="fantasy"][data-theme] .pip .fantasy-art {width: 36px; height: 36px; filter: grayscale(.75) brightness(.6); opacity: .75;}
 html[data-design="fantasy"][data-theme] .pip.on .fantasy-art {filter: none; opacity: 1;}
-html[data-design="fantasy"][data-theme] .shell:after {top: 84px; right: -2px; width: 29px; height: 157px; background: url("assets/torch.png") center/auto 100% no-repeat;}
+html[data-design="fantasy"][data-theme] .shell:after {top: 84px; right: 0; width: 29px; height: 157px; background: url("assets/torch.png") center/auto 100% no-repeat;}
 html[data-design="fantasy"][data-theme] .topbar {background-size: 100% auto; overflow: hidden;}
 html[data-design="fantasy"][data-theme] .topbar:before {content: none; display: none;}
 html[data-design="fantasy"][data-theme] .ib:is(:hover,:active,:focus,:focus-visible) {background: transparent; box-shadow: none;}
@@ -309,3 +309,10 @@ html[data-design="fantasy"][data-theme] :is(.catalog-search,.bag-search)::before
 @keyframes fantasy-search-outline{0%,100%{opacity:.12}50%{opacity:.28}}
 html[data-design="fantasy"][data-theme] :is(input,textarea,select):focus{border-color:#8e999a;box-shadow:0 0 0 2px #b8c1c133}
 html[data-design="fantasy"][data-theme] .pill.pink{background:#b8c1c112;border-color:#a4afae66;color:var(--text)}
+
+/* Keep the document inside the viewport while its content scrolls vertically.
+   Root overscroll suppression also prevents WKWebView exposing its gray canvas. */
+html[data-design="fantasy"], html[data-design="fantasy"] body{
+ overflow-x:clip;overscroll-behavior:none;
+}
+html[data-design="fantasy"]{background:#100e0c}
