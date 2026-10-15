@@ -112,7 +112,7 @@ html[data-design="fantasy"][data-theme] .item {margin-bottom: 9px; gap: 9px;}
 html[data-design="fantasy"][data-theme] .item :is(.main,.main b,.ability-name) {color: #2b2014;}
 html[data-design="fantasy"][data-theme] :is(.item,.card,.attr,.level-preview>div,.level-diffs>div,.empty) :is(small,.small,.subtitle) {color: #644d33;}
 html[data-design="fantasy"][data-theme] .item>.icon {color: #60472c;}
-html[data-design="fantasy"][data-theme] .item .badge {background: #594025; color: #f3e0b8; border: 1px solid #8c663b; border-radius: 5px;}
+html[data-design="fantasy"][data-theme] .item .badge {background: #50321e var(--control-leather) center/100px 100px repeat; color: #f3e0b8; border: 1px solid #8c663b; border-radius: 5px;}
 html[data-design="fantasy"][data-theme] .attr {min-height: 96px; display: grid; place-content: center; text-align: center;}
 html[data-design="fantasy"][data-theme] .attr b {font: 29px/1.15 Georgia,serif; color: #2b2014;}
 html[data-design="fantasy"] .attr small {margin-top: 6px;}
@@ -242,7 +242,7 @@ html[data-design="fantasy"][data-theme] .nav button .art-bag {background-positio
 html[data-design="fantasy"][data-theme] .nav button .art-book {background-position: 66.6667% 0;}
 html[data-design="fantasy"] .fantasy-coin>.fantasy-art {clip-path: circle(44% at 50% 48%);}
 html[data-design="fantasy"][data-theme] .section .ib[aria-expanded] .icon, html[data-design="fantasy"][data-theme] .sheet-block-header .ib[aria-expanded] .icon {color: #dfc7a1; stroke: #dfc7a1;}
-html[data-design="fantasy"][data-theme] .hero {padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid #765333;}
+html[data-design="fantasy"][data-theme] .hero {padding-bottom: 16px; margin-bottom: 18px; border-bottom: 0;}
 html[data-design="fantasy"][data-theme] .hero:before, html[data-design="fantasy"][data-theme] .hero:after {content: none; display: none;}
 html[data-design="fantasy"][data-theme] .brand {transform: translate(5px,5px); gap: 10px;}
 html[data-design="fantasy"][data-theme] .brand b {font-family: FantasyTitle,Georgia,serif; font-size: 17px; line-height: 1.2; color: #d8c09b; text-shadow: 0 1px 2px #0008;}
@@ -278,7 +278,7 @@ html[data-design="fantasy"][data-theme] :is(.btn.ghost,.btn.soft,.btn.danger) {b
 html[data-design="fantasy"][data-theme] .quick-button {background: #e0c49a var(--control-paper) center/220px 220px repeat !important; box-shadow: 0 1px 2px #51311644; text-shadow: none;}
 html[data-design="fantasy"][data-theme] :is(input:not([type=checkbox]):not([type=range]),textarea,select), html[data-design="fantasy"][data-theme] .modal :is(input:not([type=checkbox]):not([type=range]),textarea,select) {background: #f3e2c3 var(--control-paper) center/250px 250px repeat; background-blend-mode: normal; color: #332414; border: 1px solid #9c7648; border-radius: 3px; box-shadow: inset 0 1px 3px #53361925;}
 html[data-design="fantasy"][data-theme] :is(.section,.sheet-block-header) {background: #50321e var(--control-leather) center/240px 240px repeat; border-color: #785637; box-shadow: 0 2px 3px #160d0855;}
-html[data-design="fantasy"][data-theme] .modal .settings-panel .btn {background: #e0c49a var(--control-paper) center/220px 220px repeat; box-shadow: none;}
+html[data-design="fantasy"][data-theme] .modal .settings-panel .btn {background: transparent; border: 0; border-image: none; box-shadow: none; color: #302215; text-shadow: none;}
 html[data-design="fantasy"][data-theme] .modal :is(.contact-name,.contact-group-empty,.journal-entry,.journal-empty) {background: #e0c49a var(--control-paper) center/250px 250px repeat; box-shadow: none;}
 html[data-design="fantasy"][data-theme] .modal .note {background: #d4b787 var(--control-paper) center/250px 250px repeat; background-blend-mode: multiply; box-shadow: none;}
 html[data-design="fantasy"][data-theme] .modal :is(.usage-card,.equipment-preview) {background: #e0c49a var(--control-paper) center/250px 250px repeat; box-shadow: none;}
@@ -316,3 +316,14 @@ html[data-design="fantasy"], html[data-design="fantasy"] body{
  overflow-x:clip;overscroll-behavior:none;
 }
 html[data-design="fantasy"]{background:#100e0c}
+
+/* The selected design stays identifiable without a separate button surface. */
+html[data-design="fantasy"][data-theme] .modal .design-options>.btn[aria-pressed="true"]{
+ font-weight:750;text-decoration:underline;text-underline-offset:4px;
+}
+
+/* Parchment for checkbox rows; the checkbox keeps its checked-state feedback. */
+html[data-design="fantasy"][data-theme] .modal .check-label{
+ background:#e0c49a var(--control-paper) center/220px 220px repeat;
+ border:1px solid #977044;border-radius:3px;color:#302215;
+}
