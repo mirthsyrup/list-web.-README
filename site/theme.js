@@ -16,6 +16,7 @@ function apply(){
  document.documentElement.dataset.design=design;
  document.documentElement.dataset.theme=theme;
  if(root.webkit?.messageHandlers?.saveState)document.documentElement.dataset.nativeIos='true';
+ if(root.NativeBridge||root.webkit?.messageHandlers?.saveState)document.documentElement.dataset.nativeApp='true';
  try{root.NativeBridge?.setTheme?.(theme);root.webkit?.messageHandlers?.setTheme?.postMessage(theme);}catch{}
  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',medieval?(light?'#2c2117':'#15120f'):(light?'#e9dfce':'#3b3b40'));
 }

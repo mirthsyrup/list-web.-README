@@ -296,5 +296,6 @@ document.addEventListener('pointerdown',e=>{if(e.target.closest('[data-action="c
 
 // Keep editing menus available in fields, suppress long-press browser menus elsewhere.
 document.addEventListener('contextmenu',event=>{
+ if(!window.NativeBridge&&!window.webkit?.messageHandlers?.saveState)return;
  if(!event.target.closest('input,textarea,[contenteditable]:not([contenteditable="false"])'))event.preventDefault();
 });
