@@ -22,13 +22,15 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
    }
    if(Rules.creationMissing(c,db).length)throw Error('Invalid creation draft');
    localStorage.setItem('list-draft',JSON.stringify({step:4,c}));
+   ListFeedback.configure({sound:true});window.__sounds=[];const emit=ListFeedback.emit;ListFeedback.emit=(kind,detail)=>{const result=emit(kind,detail);__sounds.push({kind,...result});return result;};
    window.__arrivals=[];const run=ListMotion.revealCharacter;ListMotion.revealCharacter=function(scope){const result=run(scope);__arrivals.push({result,animations:scope.getAnimations({subtree:true}).filter(a=>a.effect.getTiming().iterations!==Infinity)});return result;};
   });
   await page.locator('[data-action="create"]').click();await page.locator('[data-action="wizard-next"]').waitFor();
   await page.evaluate(()=>scrollTo(0,200));await page.locator('[data-action="wizard-next"]').click();
   await page.waitForFunction(()=>window.__arrivals.length===1);
   const first=await page.evaluate(()=>{const state=JSON.parse(localStorage.getItem('list-state')),hero=state.characters[0];return {result:__arrivals[0].result,count:__arrivals[0].animations.length,top:scrollY,hp:hero.hp,max:Rules.calculate(hero,Object.fromEntries(Object.values(CATALOG).flat().map(x=>[x.id,x]))).maxHp,stored:JSON.stringify(state),meter:document.querySelector('.meter>div').style.transform};});
-  assert.equal(first.result,true);assert.equal(first.count,4);assert.equal(first.top,0);assert.equal(first.hp,first.max);
+  assert.equal(first.result,true);assert.equal(first.count,5);assert.equal(first.top,0);assert.equal(first.hp,first.max);
+  assert.equal(await page.evaluate(()=>__sounds.filter(x=>x.kind==='level-up'&&x.sound).length),1,'Creation plays the approved fanfare once');
   assert.equal(await page.evaluate(()=>Math.max(...__arrivals[0].animations.map(a=>a.effect.getTiming().delay+a.effect.getTiming().duration))),3500);
   assert(await page.locator('#app').evaluate(el=>el.inert));
   // Freeze only the new one-shot animations to inspect the entrance midway.
@@ -64,6 +66,15 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   await page.locator('#character-arrival-guard').waitFor({state:'detached',timeout:5000});
   const elapsed=await page.evaluate(()=>performance.now()-__introStarted);assert(elapsed>=3400&&elapsed<4600,'Natural intro lasts about 3.5s');
   assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);
+  await page.evaluate(()=>{ListFeedback.configure({sound:true});window.__sounds=[];const emit=ListFeedback.emit;ListFeedback.emit=(kind,detail)=>{const result=emit(kind,detail);__sounds.push({kind,...result});return result;};});
+  await page.locator('[data-action="level"]').first().click();
+  for(let i=0;i<12&&await page.locator('[data-action="advance-apply"]').isDisabled();i++){
+   await page.locator('[data-action="advance-pick"]:not(.selected),[data-action="advance-option"]:not(.selected)').first().click();
+   await page.locator('[data-action="pick"]:not([disabled]),[data-action="advance-skill"]:not([disabled]),[data-action="advance-option-set"]:not([disabled])').first().click();
+  }
+  await page.locator('[data-action="advance-apply"]').click();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('list-state')).characters[0].level),2);
+  assert.equal(await page.evaluate(()=>__sounds.filter(x=>x.kind==='level-up'&&x.sound).length),1,'Saved level gain plays the fanfare once');
   await page.locator('.nav [data-tab="catalog"]').click();await page.locator('#catalog-results').waitFor();
   assert.deepEqual(errors,[]);results.push({design,passed:true,created_and_saved:true,hp_unchanged:true,no_replay:true,reduced_motion:true,visual_preference:true,duration_ms:3500,input_blocked_until_end:true,accidental_input_does_not_cancel:true,background_redraw_preserves_intro:true,unlocks_on_completion:true,unlocks_on_background:true,navigation_after_completion:true,physical_device_tested:false});await context.close();
  }

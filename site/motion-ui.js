@@ -61,6 +61,8 @@ function revealCharacter(scope){
  const parts=[scope.querySelector('.hero'),scope.querySelector('.health-layout'),scope.querySelector('.saves')].filter(Boolean);
  parts.forEach((el,index)=>run(el,[{opacity:0,transform:`translateY(${medieval?9:5}px)`},{opacity:1,transform:'translateY(0)'}],{duration:[700,900,800][index],delay:[0,400,850][index]}));
  const liquid=scope.querySelector('.meter>div');
+ const portrait=scope.querySelector('.hero-name .avatar');
+ if(portrait)run(portrait,[{filter:'brightness(1)'},{filter:'brightness(1.28)',offset:.4},{filter:'brightness(1)'}],{duration:1000,delay:600});
  if(liquid)run(liquid,[{transform:'scaleX(0)'},{transform:root.getComputedStyle(liquid).transform}],{duration:2400,delay:1100});
  if(record.owners.size){
   record.guard=document.createElement('div');record.guard.id='character-arrival-guard';record.guard.setAttribute('aria-hidden','true');
