@@ -30,7 +30,42 @@ const moving='.sheet-block,.layout-row,.journal-entry,.contact-name,.quick-butto
 function patch(el,html,{movingRows=true,lists=true}={}){if(!el)return;if(sheetFold&&el.contains(sheetFold.el))sheetFold.finish();const focus=document.activeElement,before=movingRows?rectangles(moving,el):null,scroll=[el,...el.querySelectorAll('.modal,.tabs,.catalog-editions,.picker-list,.catalog-filter-body')].map(x=>[x,x.scrollTop,x.scrollLeft]);const pool=new Map([...el.querySelectorAll('.journal-entry,.contact-name')].map(x=>[key(x),x]));pool.animateLists=lists;children(el,typeof html==='string'?template(html):html,pool);prepare(el);if(focus?.isConnected&&document.activeElement!==focus)focus.focus({preventScroll:true});for(const [x,top,left]of scroll){x.scrollTop=top;x.scrollLeft=left;}if(before)move(before,moving,el);for(const old of pool.values())if(!old.isConnected)dispose(old);}
 // Content stays visible. Ordinary updates never fade a page or result list.
 function list(el,html){if(!el||el.innerHTML===html)return;patch(el,html,{movingRows:false,lists:false});}
-function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});}
+function renderApp(el,html,scene){cancelCharacterReveal();const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});}
+// A one-shot celebration after creation. Only presentation changes: the saved HP
+// and controls are already final, and any interaction restores the normal sheet.
+let characterReveal=null;
+function cancelCharacterReveal(){
+ const current=characterReveal;if(!current)return;characterReveal=null;
+ for(const [el,state] of current.owners)if(states.get(el)===state)stop(el);
+}
+function revealCharacter(scope){
+ cancelCharacterReveal();
+ if(!scope?.isConnected||reduced()||document.hidden||root.ListFeedback?.prefs?.().visual===false)return false;
+ const medieval=document.documentElement.dataset.design==='fantasy';
+ const record={owners:new Map()};characterReveal=record;
+ function run(el,frames,options){
+  if(!el?.animate)return;
+  let animation;const state=own(el,()=>{animation?.cancel();active.delete(animation);record.owners.delete(el);});
+  record.owners.set(el,state);
+  try{animation=el.animate(frames,{easing:ease,fill:'backwards',...options});}
+  catch{stop(el);return;}
+  active.add(animation);
+  animation.finished.catch(()=>{}).then(()=>{
+   active.delete(animation);
+   if(states.get(el)===state){states.delete(el);record.owners.delete(el);}
+   if(!record.owners.size&&characterReveal===record)characterReveal=null;
+  });
+ }
+ const parts=[scope.querySelector('.hero'),scope.querySelector('.health-layout'),scope.querySelector('.saves')].filter(Boolean);
+ parts.forEach((el,index)=>run(el,[{opacity:0,transform:`translateY(${medieval?9:5}px)`},{opacity:1,transform:'translateY(0)'}],{duration:medieval?380:300,delay:index*(medieval?90:65)}));
+ const liquid=scope.querySelector('.meter>div');
+ if(liquid)run(liquid,[{transform:'scaleX(0)'},{transform:root.getComputedStyle(liquid).transform}],{duration:medieval?680:500,delay:medieval?200:150});
+ if(!record.owners.size)characterReveal=null;
+ return record.owners.size>0;
+}
+for(const event of ['pointerdown','keydown','wheel'])document.addEventListener(event,cancelCharacterReveal,{capture:true,passive:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelCharacterReveal();});
+root.addEventListener('pagehide',cancelCharacterReveal);
 function rectangles(selector,scope=document){const out=new Map();if(reduced())return out;for(const el of scope.querySelectorAll(selector)){if(el.parentElement?.closest(selector)&&scope.contains(el.parentElement.closest(selector)))continue;const k=key(el),r=el.getBoundingClientRect();if(k&&r.height&&r.bottom>0&&r.top<root.innerHeight)out.set(k,r);}return out;}
 function move(before,selector,scope=document){if(reduced())return;const nodes=[...scope.querySelectorAll(selector)].filter(el=>before?.has(key(el))&&el.animate);for(const el of nodes)stop(el);const moves=nodes.map(el=>{const old=before.get(key(el)),r=el.getBoundingClientRect();return {el,dx:old.left-r.left,dy:old.top-r.top};});for(const {el,dx,dy}of moves){if(Math.abs(dx)+Math.abs(dy)<1)continue;let a;const state=own(el,()=>{a?.cancel();active.delete(a);});a=el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:200,easing:ease});active.add(a);a.finished.catch(()=>{}).then(()=>{active.delete(a);if(states.get(el)===state)states.delete(el);});}}
 // Ability blocks have transparent, vertical block layout. Keep that layout stable
@@ -95,7 +130,7 @@ function showModal(overlay,html,kind,force=false){const existing=overlay.firstEl
 }
 function hideModal(overlay,onDone){const node=overlay.firstElementChild;if(!node){onDone?.();return;}if(modalState?.closing)return;node.inert=true;const panel=node.querySelector('.modal'),opacity=root.getComputedStyle(node).opacity,panelOpacity=root.getComputedStyle(panel).opacity,transform=root.getComputedStyle(panel).transform;modalState?.cancel();let a,b;const s={closing:true,cancel(){a?.cancel();b?.cancel();if(modalState===s)modalState=null;}};modalState=s;const finish=()=>{if(modalState!==s)return;s.cancel();if(overlay.firstElementChild===node)overlay.replaceChildren();document.body.classList.remove('lock');onDone?.();};if(reduced()||!panel?.animate){finish();return;}a=node.animate([{opacity},{opacity:0}],{duration:165,easing:'ease-in',fill:'both'});b=panel.animate([{opacity:panelOpacity,transform:transform==='none'?'translateY(0)':transform},{opacity:panelOpacity,transform:'translateY(12px)'}],{duration:165,easing:ease,fill:'both'});active.add(a);active.add(b);Promise.all([a.finished.catch(()=>{}),b.finished.catch(()=>{})]).then(()=>{active.delete(a);active.delete(b);finish();});}
 document.addEventListener('click',e=>{if(modalState?.closing&&e.target.closest('#overlay')){e.preventDefault();e.stopImmediatePropagation();}},true);
-function reducedChanged(){if(!reduced())return;for(const a of active)a.finish?.();}
+function reducedChanged(){if(!reduced())return;cancelCharacterReveal();for(const a of active)a.finish?.();}
 reducedQuery?.addEventListener?.('change',reducedChanged);
-root.ListMotion={patch,list,resize,renderApp,showModal,hideModal,fold,prepare,rectangles,move,reduced,closing:()=>!!modalState?.closing,expanded:el=>folds.get(el)?.show??el.open};
+root.ListMotion={patch,list,resize,renderApp,showModal,hideModal,fold,prepare,rectangles,move,reduced,revealCharacter,cancelCharacterReveal,closing:()=>!!modalState?.closing,expanded:el=>folds.get(el)?.show??el.open};
 })(window);
