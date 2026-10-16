@@ -49,11 +49,11 @@ test('backgrounding stops sound while preserving settled critical visuals',()=>{
 
 test('material cues choose all three approved variants without consecutive repeats',()=>{
  const e=setup();e.gesture();
- for(const material of ['metal','leather','cloth','wood']){
+ for(const material of ['metal','leather','cloth','wood','glass','coins']){
   const heard=new Set();let last=null;
   for(let i=0;i<12;i++){
    e.w.Math.random=()=>i%3===2?.99:0;e.gesture();
-   const result=e.api.emit('equipment',{material,equipped:i%2===0});
+   const result=e.api.emit(material==='coins'?'coins':'equipment',{material,equipped:i%2===0});
    assert.equal(result.sound,true);assert.notEqual(result.sample,last);assert.ok(result.sample.startsWith('equipment-'+material+'-'));
    heard.add(result.sample);last=result.sample;
   }
@@ -61,8 +61,8 @@ test('material cues choose all three approved variants without consecutive repea
  }
  e.api.stop();assert.equal(e.active().length,0);e.dom.window.close();
 });
-test('unselected glass stays silent; materials and existing native haptics remain compatible',()=>{
- const e=setup();e.gesture();assert.equal(e.api.emit('equipment',{material:'glass'}).sound,false);
+test('unknown materials stay silent; materials and existing native haptics remain compatible',()=>{
+ const e=setup();e.gesture();assert.equal(e.api.emit('equipment',{material:'unknown'}).sound,false);
  for(const [slug,type,category,expected] of [['rapier','weapon','','metal'],['leather-armor','armor','light','leather'],['padded-armor','armor','light','cloth'],['wooden-shield','shield','','wood'],['healing-potion-minor','consumable','potion','glass']])assert.equal(e.api.equipmentMaterial({slug,type,category}),expected);
  let native;e.w.NativeBridge={haptic:k=>native=k};e.gesture();e.api.emit('equipment',{material:'metal'});assert.equal(native,'roll');
  e.api.configure({sound:false,haptics:false,visual:false});const muted=e.api.emit('equipment',{material:'wood'});assert.equal(muted.sound,false);assert.equal(muted.haptics,false);assert.equal(muted.visual,false);

@@ -125,7 +125,7 @@ function error(field,message){
  field.focus?.({preventScroll:true});
 }
 function emit(kind,detail={}){
- if(kind==='equipment'){
+ if(kind==='equipment'||kind==='coins'){
   if(quiet()||!detail.anchor?.isConnected)return false;
   const record=own(detail.anchor,650);if(!record)return false;
   record.anchor.classList.add('interaction-feedback');

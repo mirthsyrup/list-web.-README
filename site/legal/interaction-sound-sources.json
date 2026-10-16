@@ -1,0 +1,200 @@
+[
+  {
+    "group": "metal",
+    "variant": 1,
+    "label": "Щелчок металла",
+    "source_file": "rpg/metalClick.ogg",
+    "source_sha256": "9851a69d0c613e13bceef08060ecc4148f098ef487927cbebe270d642398a3b3",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "metal",
+    "variant": 2,
+    "label": "Металлическая защёлка",
+    "source_file": "rpg/metalLatch.ogg",
+    "source_sha256": "ba9ba60b172b3ebc131a940f25793cd2e207aca7af73dc80d637277f060f1708",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "metal",
+    "variant": 3,
+    "label": "Извлечение клинка",
+    "source_file": "rpg/drawKnife1.ogg",
+    "source_sha256": "276403e72c3b71c47bc24db3083970c23f8e5551ffa78f436f83483c56f3f0bb",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "leather",
+    "variant": 1,
+    "label": "Движение кожи — 1",
+    "source_file": "rpg/handleSmallLeather.ogg",
+    "source_sha256": "ae3cbf695aa0a8b98b5a80a835be5a3ccbd5446a24db2235cd4c3cd6fc92ed96",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "leather",
+    "variant": 2,
+    "label": "Движение кожи — 2",
+    "source_file": "rpg/handleSmallLeather2.ogg",
+    "source_sha256": "a66f6db5918ad016c28a9f2768f127a7f39b5fa04481e5a3b4e78ebe2a1c282d",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "leather",
+    "variant": 3,
+    "label": "Ремень",
+    "source_file": "rpg/beltHandle1.ogg",
+    "source_sha256": "2ef665bd8b65dbe669f4560be38a6d8f04a162e618b15a49e3e71b58e558aab0",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "cloth",
+    "variant": 1,
+    "label": "Шорох ткани — 1",
+    "source_file": "rpg/cloth1.ogg",
+    "source_sha256": "ddb93a3671233f95da0e0b10367f082f7eb42fa6caaddcf776410aa8833c747d",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "cloth",
+    "variant": 2,
+    "label": "Шорох ткани — 2",
+    "source_file": "rpg/cloth2.ogg",
+    "source_sha256": "8a7451193c38bc05483aec25dd193e163a15d44cf7fff04ac7912573231b0201",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "cloth",
+    "variant": 3,
+    "label": "Шорох ткани — 3",
+    "source_file": "rpg/cloth3.ogg",
+    "source_sha256": "a48632d17a4f1416541d261a32a31612e01267144c407fa3ecab3ff410f0085b",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/rpg-audio",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "wood",
+    "variant": 1,
+    "label": "Лёгкий деревянный стук — 1",
+    "source_file": "impact/impactWood_light_000.ogg",
+    "source_sha256": "eb45e35b4bed784d3f120de4afec4b0d6ac09d9e143cce8cfcb7d739e1b1f3c3",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/impact-sounds",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "wood",
+    "variant": 2,
+    "label": "Лёгкий деревянный стук — 2",
+    "source_file": "impact/impactWood_light_003.ogg",
+    "source_sha256": "cdfbe8af2fe7ff9ee28f337a0a989deee0f327620da456c8413644880e9d0004",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/impact-sounds",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "wood",
+    "variant": 3,
+    "label": "Средний деревянный стук",
+    "source_file": "impact/impactWood_medium_001.ogg",
+    "source_sha256": "15271dbe8e2872dbb0ff1aeb7b12b2d2b92b7c1951c88532b9ab9158c36dfc73",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/impact-sounds",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "coins",
+    "variant": 1,
+    "label": "Монеты в ладони — 1",
+    "source_file": "coins/coin.1.ogg",
+    "source_sha256": "c47ad0c43744a383decaad07127a17b450d18dcf6b9372cbb281c8a64c0d5cbb",
+    "license": "CC0 1.0",
+    "creator": "StarNinjas",
+    "page": "https://opengameart.org/content/12-coin-sound-effects",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "coins",
+    "variant": 2,
+    "label": "Монеты в ладони — 2",
+    "source_file": "coins/coin.5.ogg",
+    "source_sha256": "5da1fff076ed43e7f01a3356f3b37d2fe3724283b5a9a881994bb9347891c3d2",
+    "license": "CC0 1.0",
+    "creator": "StarNinjas",
+    "page": "https://opengameart.org/content/12-coin-sound-effects",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "coins",
+    "variant": 3,
+    "label": "Монеты в ладони — 3",
+    "source_file": "coins/coin.9.ogg",
+    "source_sha256": "3323c9c38a611a2abc0ec1ca44c020efe7e0d5ab411d54176760ecf4eb2d9df6",
+    "license": "CC0 1.0",
+    "creator": "StarNinjas",
+    "page": "https://opengameart.org/content/12-coin-sound-effects",
+    "changes": "volume, short leading fade, MP3 conversion"
+  },
+  {
+    "group": "glass",
+    "variant": 1,
+    "label": "Прежнее стекло — 1",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/impact-sounds",
+    "changes": "unchanged from accepted v2 preview",
+    "source_file": "impact/impactGlass_light_000.ogg",
+    "source_sha256": "d750cf88097d0c3e69920e6e14496e1444e1a9da01aa4cca8f5ec8cb44c57b4f"
+  },
+  {
+    "group": "glass",
+    "variant": 2,
+    "label": "Прежнее стекло — 2",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/impact-sounds",
+    "changes": "unchanged from accepted v2 preview",
+    "source_file": "impact/impactGlass_light_003.ogg",
+    "source_sha256": "765290ce32fa108c939a0dbd6fbacbcd05abde622b57b708eb8a64058ef4225a"
+  },
+  {
+    "group": "glass",
+    "variant": 3,
+    "label": "Прежнее стекло — 3",
+    "license": "CC0 1.0",
+    "creator": "Kenney",
+    "page": "https://kenney.nl/assets/impact-sounds",
+    "changes": "unchanged from accepted v2 preview",
+    "source_file": "impact/impactGlass_medium_001.ogg",
+    "source_sha256": "d3d806cb3012c9ddd87010b30295ccb74d6d8b690077d19e67afd09a9d8feb03"
+  }
+]
