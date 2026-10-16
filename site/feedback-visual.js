@@ -128,6 +128,12 @@ function emit(kind,detail={}){
  if(kind==='equipment'||kind==='coins'){
   if(quiet()||!detail.anchor?.isConnected)return false;
   const record=own(detail.anchor,650);if(!record)return false;
+  if(kind==='equipment'&&detail.equipmentChanged){
+   const state=detail.anchor.querySelector('.equipment-state');
+   if(state)animate(record,state,detail.equipped?
+    [{opacity:.55,transform:'translateY(2px)'},{opacity:1,transform:'translateY(0)'}]:
+    [{opacity:.5},{opacity:1}],{duration:420});
+  }
   record.anchor.classList.add('interaction-feedback');
   const shine=node(record,'interaction-feedback-shine');
   const animation=animate(record,shine,[{opacity:0},{opacity:detail.equipped?.4:.22,offset:.3},{opacity:0}],{duration:520,fill:'forwards'});

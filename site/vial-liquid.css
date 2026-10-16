@@ -1,0 +1,10 @@
+/* Keep the original glass, leather and fasteners above the liquid. */
+html[data-design="fantasy"][data-theme] .meter .vial-liquid{
+ position:absolute;left:51%;top:25%;width:38%;height:52%;z-index:1;
+ border-radius:3px;overflow:hidden;pointer-events:none;clip-path:inset(0 round 3px);
+}
+html[data-design="fantasy"][data-theme] .meter[data-vial-ready]>div{visibility:hidden}
+.equipment-state{display:inline-block}
+.item[data-equipped="true"] .equipment-state{color:var(--text);font-weight:600}
+html[data-design="fantasy"] .item[data-equipped="true"] .equipment-state{color:#64401e}
+@media(prefers-reduced-motion:reduce){.equipment-state{transition:none}}

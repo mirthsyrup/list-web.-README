@@ -34,7 +34,8 @@ test('Public ZIP loader applies all release styles, boots feedback and preserves
     assert(w.document.querySelector('script[src]').src.startsWith('blob:'));
     assert.equal(typeof w.ListFeedback?.emit,'function');
     assert.equal(typeof w.ListFeedbackVisual?.error,'function');
-    const styles=[...w.document.querySelectorAll('link[rel="stylesheet"]')];assert.equal(styles.length,5);
+    assert.equal(typeof w.ListVial?.sync,'function');
+    const styles=[...w.document.querySelectorAll('link[rel="stylesheet"]')];assert.equal(styles.length,6);
     for(const link of styles){assert(link.href.startsWith('blob:'),'Every stylesheet must be resolved from the release ZIP');assert(link.sheet?.cssRules.length>0,'Every stylesheet must actually load');}
     const holder=w.document.createElement('div');holder.innerHTML=w.ListVisual.seal;w.document.body.append(holder);
     assert.equal(w.getComputedStyle(holder.firstChild).fill,'none','The compass must be an outline');

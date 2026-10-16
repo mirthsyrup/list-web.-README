@@ -30,7 +30,7 @@ const moving='.sheet-block,.layout-row,.journal-entry,.contact-name,.quick-butto
 function patch(el,html,{movingRows=true,lists=true}={}){if(!el)return;if(sheetFold&&el.contains(sheetFold.el))sheetFold.finish();const focus=document.activeElement,before=movingRows?rectangles(moving,el):null,scroll=[el,...el.querySelectorAll('.modal,.tabs,.catalog-editions,.picker-list,.catalog-filter-body')].map(x=>[x,x.scrollTop,x.scrollLeft]);const pool=new Map([...el.querySelectorAll('.journal-entry,.contact-name')].map(x=>[key(x),x]));pool.animateLists=lists;children(el,typeof html==='string'?template(html):html,pool);prepare(el);if(focus?.isConnected&&document.activeElement!==focus)focus.focus({preventScroll:true});for(const [x,top,left]of scroll){x.scrollTop=top;x.scrollLeft=left;}if(before)move(before,moving,el);for(const old of pool.values())if(!old.isConnected)dispose(old);}
 // Content stays visible. Ordinary updates never fade a page or result list.
 function list(el,html){if(!el||el.innerHTML===html)return;patch(el,html,{movingRows:false,lists:false});}
-function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(characterReveal&&(changed||!el.contains(characterReveal.scope)))cancelCharacterReveal();if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});}
+function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(characterReveal&&(changed||!el.contains(characterReveal.scope)))cancelCharacterReveal();if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});root.ListVial?.sync(el);}
 // A one-shot, 3.5-second introduction after creation. Saved values are final;
 // a transparent guard holds input until the animation has fully completed.
 let characterReveal=null;
@@ -44,6 +44,7 @@ function revealCharacter(scope){
  cancelCharacterReveal();
  if(!scope?.isConnected||reduced()||document.hidden||root.ListFeedback?.prefs?.().visual===false)return false;
  const medieval=document.documentElement.dataset.design==='fantasy';
+ root.ListVial?.introduce(scope);
  const record={scope,owners:new Map()};characterReveal=record;
  function run(el,frames,options){
   if(!el?.animate)return;
