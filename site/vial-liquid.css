@@ -8,3 +8,19 @@ html[data-design="fantasy"][data-theme] .meter[data-vial-ready]>div{visibility:h
 .item[data-equipped="true"] .equipment-state{color:var(--text);font-weight:600}
 html[data-design="fantasy"] .item[data-equipped="true"] .equipment-state{color:#64401e}
 @media(prefers-reduced-motion:reduce){.equipment-state{transition:none}}
+
+.health .head>.icon{animation-duration:var(--heart-period,3.8s)}
+.health[data-heart-still] .head>.icon,html[data-feedback-paused] .health .head>.icon{animation:none}
+.frame-feedback{position:relative}
+.frame-feedback-edge{position:absolute;inset:2px;z-index:5;border-radius:inherit;pointer-events:none;opacity:0;border:1px solid var(--feedback-gold);box-shadow:inset 0 0 16px color-mix(in srgb,var(--feedback-gold) 40%,transparent)}
+.frame-feedback-edge.damage{border-color:var(--feedback-damage);box-shadow:inset 0 0 16px color-mix(in srgb,var(--feedback-damage) 35%,transparent)}
+.frame-feedback-edge.heal{border-color:var(--feedback-heal);box-shadow:inset 0 0 16px color-mix(in srgb,var(--feedback-heal) 35%,transparent)}
+
+/* Choices must reflow inside the sheet; never pan the dialog sideways. */
+.modal:is([data-modal-kind="choice-confirm"],[data-modal-kind="class-choice"],[data-modal-kind="picker"],[data-modal-kind="archetype-confirm"]){min-width:0;max-width:min(650px,100%);overflow-x:hidden;touch-action:pan-y;overflow-wrap:anywhere}
+.modal:is([data-modal-kind="choice-confirm"],[data-modal-kind="class-choice"],[data-modal-kind="picker"],[data-modal-kind="archetype-confirm"])>*{min-width:0;max-width:100%}
+.modal[data-modal-kind="choice-confirm"] .choice-summary{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);width:100%}
+.modal[data-modal-kind="choice-confirm"] :is(.rules-text,.rule-paragraph,.note,li,.section){min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.modal[data-modal-kind="choice-confirm"] .equipment-diff>div{flex-wrap:wrap}
+.modal[data-modal-kind="choice-confirm"] .equipment-diff b{min-width:0;white-space:normal}
+.modal[data-modal-kind="class-choice"] .choice-option{white-space:normal;min-width:0;overflow-wrap:anywhere}

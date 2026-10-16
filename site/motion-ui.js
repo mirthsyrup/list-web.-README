@@ -30,8 +30,8 @@ const moving='.sheet-block,.layout-row,.journal-entry,.contact-name,.quick-butto
 function patch(el,html,{movingRows=true,lists=true}={}){if(!el)return;if(sheetFold&&el.contains(sheetFold.el))sheetFold.finish();const focus=document.activeElement,before=movingRows?rectangles(moving,el):null,scroll=[el,...el.querySelectorAll('.modal,.tabs,.catalog-editions,.picker-list,.catalog-filter-body')].map(x=>[x,x.scrollTop,x.scrollLeft]);const pool=new Map([...el.querySelectorAll('.journal-entry,.contact-name')].map(x=>[key(x),x]));pool.animateLists=lists;children(el,typeof html==='string'?template(html):html,pool);prepare(el);if(focus?.isConnected&&document.activeElement!==focus)focus.focus({preventScroll:true});for(const [x,top,left]of scroll){x.scrollTop=top;x.scrollLeft=left;}if(before)move(before,moving,el);for(const old of pool.values())if(!old.isConnected)dispose(old);}
 // Content stays visible. Ordinary updates never fade a page or result list.
 function list(el,html){if(!el||el.innerHTML===html)return;patch(el,html,{movingRows:false,lists:false});}
-function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(characterReveal&&(changed||!el.contains(characterReveal.scope)))cancelCharacterReveal();if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});root.ListVial?.sync(el);}
-// A one-shot, 3.5-second introduction after creation. Saved values are final;
+function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(characterReveal&&(changed||!el.contains(characterReveal.scope)))cancelCharacterReveal();if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});root.ListVial?.sync(el);root.ListPolish?.sync(el);}
+// A one-shot, seven-second introduction after creation. Saved values are final;
 // a transparent guard holds input until the animation has fully completed.
 let characterReveal=null;
 function cancelCharacterReveal(){
@@ -44,7 +44,7 @@ function revealCharacter(scope){
  cancelCharacterReveal();
  if(!scope?.isConnected||reduced()||document.hidden||root.ListFeedback?.prefs?.().visual===false)return false;
  const medieval=document.documentElement.dataset.design==='fantasy';
- root.ListVial?.introduce(scope);
+ root.ListVial?.introduce(scope,1700,4000);
  const record={scope,owners:new Map()};characterReveal=record;
  function run(el,frames,options){
   if(!el?.animate)return;
@@ -59,19 +59,21 @@ function revealCharacter(scope){
    if(!record.owners.size&&characterReveal===record)cancelCharacterReveal();
   });
  }
- const parts=[scope.querySelector('.hero'),scope.querySelector('.health-layout'),scope.querySelector('.saves')].filter(Boolean);
- parts.forEach((el,index)=>run(el,[{opacity:0,transform:`translateY(${medieval?9:5}px)`},{opacity:1,transform:'translateY(0)'}],{duration:[700,900,800][index],delay:[0,400,850][index]}));
+ const parts=[scope.querySelector('.hero'),...scope.querySelectorAll('[data-sheet-block="health"] .health,[data-sheet-block="health"] .stat,[data-sheet-block="health"] .save'),...scope.querySelectorAll('.sheet-block:not([data-sheet-block="health"])')].filter(Boolean);
+ const visible=parts.filter(el=>{const box=el.getBoundingClientRect();return box.bottom>0&&box.top<root.innerHeight-72;}),foreground=visible.length>1?visible:parts,background=parts.filter(el=>!foreground.includes(el));
+ parts.forEach(el=>{const index=foreground.indexOf(el),delay=index>=0?(foreground.length>1?index*5900/(foreground.length-1):0):(background.indexOf(el)+.37)*5600/background.length;
+  run(el,[{opacity:0,transform:`translateY(${medieval?9:6}px)`},{opacity:1,transform:'translateY(0)'}],{duration:1100,delay});});
  const liquid=scope.querySelector('.meter>div');
  const portrait=scope.querySelector('.hero-name .avatar');
- if(portrait)run(portrait,[{filter:'brightness(1)'},{filter:'brightness(1.28)',offset:.4},{filter:'brightness(1)'}],{duration:1000,delay:600});
- if(liquid)run(liquid,[{transform:'scaleX(0)'},{transform:root.getComputedStyle(liquid).transform}],{duration:2400,delay:1100});
+ if(portrait)run(portrait,[{filter:'brightness(1)'},{filter:'brightness(1.28)',offset:.4},{filter:'brightness(1)'}],{duration:1800,delay:500});
+ if(liquid)run(liquid,[{transform:'scaleX(0)'},{transform:root.getComputedStyle(liquid).transform}],{duration:4000,delay:1700});
  if(record.owners.size){
   record.guard=document.createElement('div');record.guard.id='character-arrival-guard';record.guard.setAttribute('aria-hidden','true');
   record.locks=[...document.querySelectorAll('#app,#overlay')].map(el=>[el,el.inert]);
   for(const [el] of record.locks)el.inert=true;
   document.body.append(record.guard);
   // Release even if a platform loses an animation's completion notification.
-  record.timer=setTimeout(()=>{if(characterReveal===record)cancelCharacterReveal();},5000);
+  record.timer=setTimeout(()=>{if(characterReveal===record)cancelCharacterReveal();},8500);
  }else characterReveal=null;
  return record.owners.size>0;
 }

@@ -16,7 +16,7 @@ function beginRoll(){
  for(const anchor of criticalMarks){delete anchor.dataset.feedbackDegree;anchor.querySelector(':scope > .feedback-roll-label')?.remove();}
  criticalMarks.clear();
 }
-function clear(){beginRoll();for(const record of [...active])finish(record);}
+function clear(){beginRoll();for(const record of [...active])finish(record);root.ListPolish?.clearFrames?.();}
 function settleCritical(record){
  if(!active.has(record))return;clearTimeout(record.timer);record.timer=null;
  for(const {el,frame} of record.finalStyles)for(const key of ['opacity','transform'])if(frame[key]!==undefined)el.style[key]=String(frame[key]);
@@ -45,6 +45,7 @@ function health(kind,detail){
  const healing=kind==='heal'||kind==='health-heal';
  if(healing?hp<=0:hp>=0&&temp>=0)return;
  const anchor=detail.anchor||document.querySelector('.health');
+ root.ListPolish?.frame(anchor,healing?'heal':'damage');
  const reduced=quiet(),record=own(anchor,reduced?1400:1150);
  if(!record||document.hidden){if(record)finish(record);return;}
  anchor.classList.add('health-feedback');
@@ -79,6 +80,7 @@ function roll(kind,detail){
  const degree=detail.degree,success=degree==='Критический успех',failure=degree==='Критический провал';
  if(!success&&!failure)return;
  const anchor=detail.anchor;if(!anchor?.isConnected||document.hidden)return;
+ root.ListPolish?.frame(anchor,success?'gold':'damage');
  anchor.dataset.feedbackDegree=success?'critical-success':'critical-failure';criticalMarks.add(anchor);
  let label=anchor.querySelector(':scope > h3');
  if(!label){label=document.createElement('h3');label.className='feedback-roll-label';anchor.append(label);}label.textContent=detail.label||degree;
@@ -127,16 +129,16 @@ function error(field,message){
 function emit(kind,detail={}){
  if(kind==='equipment'||kind==='coins'){
   if(quiet()||!detail.anchor?.isConnected)return false;
-  const record=own(detail.anchor,650);if(!record)return false;
+  const equipment=kind==='equipment',record=own(detail.anchor,equipment?1900:650);if(!record)return false;
   if(kind==='equipment'&&detail.equipmentChanged){
    const state=detail.anchor.querySelector('.equipment-state');
    if(state)animate(record,state,detail.equipped?
     [{opacity:.55,transform:'translateY(2px)'},{opacity:1,transform:'translateY(0)'}]:
-    [{opacity:.5},{opacity:1}],{duration:420});
+    [{opacity:.5},{opacity:1}],{duration:1260});
   }
   record.anchor.classList.add('interaction-feedback');
   const shine=node(record,'interaction-feedback-shine');
-  const animation=animate(record,shine,[{opacity:0},{opacity:detail.equipped?.4:.22,offset:.3},{opacity:0}],{duration:520,fill:'forwards'});
+  const animation=animate(record,shine,[{opacity:0},{opacity:detail.equipped?.4:.22,offset:.4},{opacity:0}],{duration:equipment?1560:520,fill:'forwards',easing:'cubic-bezier(.35,0,.25,1)'});
   if(animation)animation.finished.catch(()=>{}).then(()=>finish(record));else finish(record);
   return true;
  }

@@ -11,6 +11,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
  const browser=await chromium.launch({executablePath:process.env.LIST_CHROME||'/usr/bin/chromium',args:['--no-sandbox']});
  try{
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,serviceWorkers:'block'}),page=await context.newPage(),errors=[],failedAssets=[],checks=[];
+  checks.push=(...items)=>{for(const item of items)console.log('Checked: '+item);return Array.prototype.push.apply(checks,items);};
   page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&/\.(css|js|zip)(?:\?|$)/.test(r.url()))failedAssets.push({url:r.url(),status:r.status()});});
   await context.route('**/*',route=>new URL(route.request().url()).hostname===new URL(url).hostname?route.continue():route.abort());
   await context.addInitScript(()=>{window.__hapticEvents=[];window.NativeBridge={haptic(kind){window.__hapticEvents.push(kind);}};});

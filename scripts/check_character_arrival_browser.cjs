@@ -29,9 +29,11 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   await page.evaluate(()=>scrollTo(0,200));await page.locator('[data-action="wizard-next"]').click();
   await page.waitForFunction(()=>window.__arrivals.length===1);
   const first=await page.evaluate(()=>{const state=JSON.parse(localStorage.getItem('list-state')),hero=state.characters[0];return {result:__arrivals[0].result,count:__arrivals[0].animations.length,top:scrollY,hp:hero.hp,max:Rules.calculate(hero,Object.fromEntries(Object.values(CATALOG).flat().map(x=>[x.id,x]))).maxHp,stored:JSON.stringify(state),meter:document.querySelector('.meter>div').style.transform};});
-  assert.equal(first.result,true);assert.equal(first.count,5);assert.equal(first.top,0);assert.equal(first.hp,first.max);
+  assert.equal(first.result,true);assert(first.count>=12,'Cards and sheet sections each reveal separately');assert.equal(first.top,0);assert.equal(first.hp,first.max);
   assert.equal(await page.evaluate(()=>__sounds.filter(x=>x.kind==='level-up'&&x.sound).length),1,'Creation plays the approved fanfare once');
-  assert.equal(await page.evaluate(()=>Math.max(...__arrivals[0].animations.map(a=>a.effect.getTiming().delay+a.effect.getTiming().duration))),3500);
+  assert.equal(await page.evaluate(()=>Math.max(...__arrivals[0].animations.map(a=>a.effect.getTiming().delay+a.effect.getTiming().duration))),7000);
+  const entrances=await page.evaluate(()=>__arrivals[0].animations.filter(a=>a.effect.target.matches('.hero,.health,.stat,.save,.sheet-block')).map(a=>a.effect.getTiming().delay));
+  assert.equal(new Set(entrances).size,entrances.length,'Every card and block has its own entrance time');
   assert(await page.locator('#app').evaluate(el=>el.inert));
   // Freeze only the new one-shot animations to inspect the entrance midway.
   await page.evaluate(()=>{for(const a of __arrivals[0].animations){a.pause();a.currentTime=a.effect.getTiming().delay+a.effect.getTiming().duration*.4;}});
@@ -46,7 +48,7 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   await page.locator('.nav [data-tab="bag"]').click();await page.locator('.nav [data-tab="sheet"]').click();assert.equal(await page.evaluate(()=>__arrivals.length),1,'Tab switches do not replay entrance');
   await page.reload();await page.locator('.hero-name').waitFor();assert.equal(await page.evaluate(()=>typeof __arrivals),'undefined','Reload does not start one-shot entrance');
   const lifecycle=await page.evaluate(async()=>{
-   const scope=document.querySelector('#page-content'),finite=()=>scope.getAnimations({subtree:true}).filter(a=>a.effect.target.matches('.hero,.health-layout,.saves,.meter>div'));
+   const scope=document.querySelector('#page-content'),finite=()=>scope.getAnimations({subtree:true}).filter(a=>a.effect.target.matches('.hero,.health,.stat,.save,.sheet-block,.meter>div,.avatar'));
    ListFeedback.configure({visual:false});const disabled=ListMotion.revealCharacter(scope);ListFeedback.configure({visual:true});
    ListMotion.revealCharacter(scope);document.body.dispatchEvent(new Event('pointerdown',{bubbles:true,cancelable:true}));document.querySelector('.nav [data-tab="bag"]').click();
    const blocked=!!document.querySelector('#character-arrival-guard')&&document.querySelector('#app').inert&&scope.dataset.scene.endsWith(':sheet');
@@ -54,7 +56,7 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
    ListMotion.revealCharacter(scope);ListMotion.renderApp(document.querySelector('#app'),document.querySelector('#app').innerHTML,scope.dataset.scene);await Promise.resolve();const redrawn=finite().length;
    ListMotion.cancelCharacterReveal();
    return {disabled,blocked,switchedOff,released,redrawn};
-  });assert.deepEqual(lifecycle,{disabled:false,blocked:true,switchedOff:0,released:true,redrawn:4});
+  });assert.equal(lifecycle.disabled,false);assert.equal(lifecycle.blocked,true);assert.equal(lifecycle.switchedOff,0);assert.equal(lifecycle.released,true);assert(lifecycle.redrawn>=12);
   await page.evaluate(()=>ListMotion.revealCharacter(document.querySelector('#page-content')));await page.emulateMedia({reducedMotion:'reduce'});
   await page.locator('#character-arrival-guard').waitFor({state:'detached'});assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);
   assert.equal(await page.evaluate(()=>ListMotion.revealCharacter(document.querySelector('#page-content'))),false);
@@ -63,8 +65,10 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);assert.equal(await page.locator('#character-arrival-guard').count(),0);
   // Check natural completion on the actual clock, not just manual animation finish.
   await page.evaluate(()=>{window.__introStarted=performance.now();ListMotion.revealCharacter(document.querySelector('#page-content'));});
-  await page.locator('#character-arrival-guard').waitFor({state:'detached',timeout:5000});
-  const elapsed=await page.evaluate(()=>performance.now()-__introStarted);assert(elapsed>=3400&&elapsed<4600,'Natural intro lasts about 3.5s');
+  await page.waitForTimeout(4000);await page.keyboard.press('Enter');
+  const lockedAtFour=await page.evaluate(()=>!!document.querySelector('#character-arrival-guard')&&document.querySelector('#app').inert);assert(lockedAtFour,'Input stays locked beyond the old3.5-second duration');
+  await page.locator('#character-arrival-guard').waitFor({state:'detached',timeout:9000});
+  const elapsed=await page.evaluate(()=>performance.now()-__introStarted);assert(elapsed>=6900&&elapsed<8200,'Natural intro lasts about seven seconds');
   assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);
   await page.evaluate(()=>{ListFeedback.configure({sound:true});window.__sounds=[];const emit=ListFeedback.emit;ListFeedback.emit=(kind,detail)=>{const result=emit(kind,detail);__sounds.push({kind,...result});return result;};});
   await page.locator('[data-action="level"]').first().click();
@@ -76,7 +80,7 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('list-state')).characters[0].level),2);
   assert.equal(await page.evaluate(()=>__sounds.filter(x=>x.kind==='level-up'&&x.sound).length),1,'Saved level gain plays the fanfare once');
   await page.locator('.nav [data-tab="catalog"]').click();await page.locator('#catalog-results').waitFor();
-  assert.deepEqual(errors,[]);results.push({design,passed:true,created_and_saved:true,hp_unchanged:true,no_replay:true,reduced_motion:true,visual_preference:true,duration_ms:3500,input_blocked_until_end:true,accidental_input_does_not_cancel:true,background_redraw_preserves_intro:true,unlocks_on_completion:true,unlocks_on_background:true,navigation_after_completion:true,physical_device_tested:false});await context.close();
+  assert.deepEqual(errors,[]);results.push({design,passed:true,created_and_saved:true,hp_unchanged:true,no_replay:true,reduced_motion:true,visual_preference:true,duration_ms:7000,input_blocked_until_end:true,accidental_input_does_not_cancel:true,background_redraw_preserves_intro:true,unlocks_on_completion:true,unlocks_on_background:true,navigation_after_completion:true,physical_device_tested:false});await context.close();
  }
  fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2)+'\n');console.log(JSON.stringify(results));
  }finally{await browser.close();await new Promise(r=>server.close(r));}

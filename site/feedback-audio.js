@@ -7,6 +7,9 @@ let preferences={...defaults},context=null,master=null,gestureAt=-Infinity,audio
 const sampleBuffers=new WeakMap();
 const voices=new Set(),reduced=root.matchMedia?.('(prefers-reduced-motion: reduce)');
 try{const saved=JSON.parse(root.localStorage.getItem(key)||'null');if(saved&&typeof saved==='object'){for(const name of ['sound','haptics','visual'])if(typeof saved[name]==='boolean')preferences[name]=saved[name];if(Number.isFinite(saved.volume))preferences.volume=Math.max(0,Math.min(1,saved.volume));}}catch{}
+// One-time upgrade: raise the existing volume once, then preserve later choices.
+try{if(root.localStorage.getItem('list-feedback-volume-2.9.15')!=='1'){preferences.volume=1;root.localStorage.setItem(key,JSON.stringify(preferences));root.localStorage.setItem('list-feedback-volume-2.9.15','1');}}catch{}
+document.documentElement.toggleAttribute('data-feedback-paused',!preferences.visual);
 const ios=()=>/iPad|iPhone|iPod/.test(root.navigator?.userAgent||'')||root.navigator?.platform==='MacIntel'&&root.navigator?.maxTouchPoints>1;
 const nativeHaptic=()=>typeof root.NativeBridge?.haptic==='function'||typeof root.webkit?.messageHandlers?.haptic?.postMessage==='function';
 function capabilities(){return{sound:typeof(root.AudioContext||root.webkitAudioContext)==='function',haptics:nativeHaptic()||!ios()&&typeof root.navigator?.vibrate==='function',visual:true,reducedMotion:!!reduced?.matches};}
@@ -21,7 +24,7 @@ function equipmentMaterial(item={}){
  if(/wood|bow|staff|club|spear|sling/.test(slug))return 'wood';
  return ['weapon','armor','shield'].includes(item.type)?'metal':'leather';
 }
-function configure(patch){for(const name of ['sound','haptics','visual'])if(typeof patch?.[name]==='boolean')preferences[name]=patch[name];if(Number.isFinite(patch?.volume))preferences.volume=Math.max(0,Math.min(1,patch.volume));try{root.localStorage.setItem(key,JSON.stringify(preferences));}catch{}if(master&&context)master.gain.setTargetAtTime(preferences.volume*.65,context.currentTime,.015);if(!preferences.sound||!preferences.volume)stopAudio();if(!preferences.haptics)cancelHaptic();if(!preferences.visual){root.ListVial?.clear?.();root.ListPolish?.clear?.();root.ListFeedbackVisual?.clear?.();root.ListMotion?.cancelCharacterReveal?.();}return prefs();}
+function configure(patch){for(const name of ['sound','haptics','visual'])if(typeof patch?.[name]==='boolean')preferences[name]=patch[name];if(Number.isFinite(patch?.volume))preferences.volume=Math.max(0,Math.min(1,patch.volume));try{root.localStorage.setItem(key,JSON.stringify(preferences));}catch{}if(master&&context)master.gain.setTargetAtTime(preferences.volume*.65,context.currentTime,.015);if(!preferences.sound||!preferences.volume)stopAudio();if(!preferences.haptics)cancelHaptic();document.documentElement.toggleAttribute('data-feedback-paused',!preferences.visual);if(!preferences.visual){root.ListVial?.clear?.();root.ListPolish?.clear?.();root.ListFeedbackVisual?.clear?.();root.ListMotion?.cancelCharacterReveal?.();}return prefs();}
 const recentGesture=()=>!document.hidden&&(root.navigator?.userActivation?.isActive===true||Date.now()-gestureAt<180);
 function unlock(event){if(event?.isTrusted===true)gestureAt=Date.now();if(!recentGesture()||!preferences.sound||!preferences.volume||!capabilities().sound)return false;try{if(!context||context.state==='closed'){const Audio=root.AudioContext||root.webkitAudioContext;context=new Audio();master=context.createGain();master.gain.value=preferences.volume*.65;master.connect(context.destination);}if(context.state==='suspended'||context.state==='interrupted')context.resume()?.catch?.(()=>{});return true;}catch{return false;}}
 function cancelHaptic(){try{if(!ios())root.navigator?.vibrate?.(0);}catch{}}
@@ -65,8 +68,9 @@ function sampled(ctx,output,id,when){
   for(let i=0;i<data.length;i++){const v=binary.charCodeAt(i*2)|(binary.charCodeAt(i*2+1)<<8);data[i]=(v>=32768?v-65536:v)/32768;}
   cache.set(id,buffer);
  }
- const source=ctx.createBufferSource();source.buffer=buffer;source.connect(output);let finished=false;
- const record={stop(){if(finished)return;finished=true;try{source.stop();}catch{}source.disconnect();voices.delete(record);}};
+ const source=ctx.createBufferSource(),boost=id==='S16'||id==='F1'?ctx.createGain():null;source.buffer=buffer;
+ if(boost){boost.gain.value=1.9;source.connect(boost);boost.connect(output);}else source.connect(output);let finished=false;
+ const record={stop(){if(finished)return;finished=true;try{source.stop();}catch{}source.disconnect();boost?.disconnect();voices.delete(record);}};
  source.onended=()=>record.stop();source.start(when);return record;
 }
 /* All envelopes start and end at silence, including the filtered crack. */
@@ -79,7 +83,7 @@ function synth(ctx,output,kind,when=ctx.currentTime,detail={}){
  function tone(freq,end,start,length,level,type='sine'){const o=node(ctx.createOscillator());o.type=type;o.frequency.setValueAtTime(freq,when+start);if(end)o.frequency.exponentialRampToValueAtTime(end,when+start+length);envelope(o,o,level,start,length);}
  function noise(start,length,level,frequency,q=1){const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*length),ctx.sampleRate),data=buffer.getChannelData(0);let seed=7331;for(let i=0;i<data.length;i++){seed=(Math.imul(seed,1664525)+1013904223)|0;data[i]=(seed>>>0)/2147483648-1;}const source=node(ctx.createBufferSource()),filter=node(ctx.createBiquadFilter());source.buffer=buffer;filter.type='bandpass';filter.frequency.value=frequency;filter.Q.value=q;source.connect(filter);envelope(filter,source,level,start,length,.003);}
  switch(kind){
- case 'roll':noise(0,.035,.085,1300,1.8);noise(.047,.027,.05,1900,2);tone(280,210,0,.055,.045);break;
+ case 'roll':noise(0,.035,.34,1300,1.8);noise(.047,.027,.2,1900,2);tone(280,210,0,.055,.18);break;
  case 'invalid':noise(0,.035,.08,850,2);tone(330,260,0,.05,.045);break;
  }
  return record;

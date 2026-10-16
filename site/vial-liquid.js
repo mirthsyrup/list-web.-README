@@ -65,7 +65,7 @@ function sync(scope=document){
   else if(target!==s.target){const from=s.running?surface(s,performance.now()):s.target;transition(s,from,target);}
  }
 }
-function introduce(scope){for(const s of states.values())if(scope.contains(s.canvas)&&moving())transition(s,0,s.target,1100,2400);}
+function introduce(scope,delay=1100,duration=2400){for(const s of states.values())if(scope.contains(s.canvas)&&moving())transition(s,0,s.target,delay,duration);}
 function clear(){for(const s of states.values())settle(s);}
 root.addEventListener('resize',()=>{for(const s of states.values())resize(s);},{passive:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});root.addEventListener('pagehide',clear);
