@@ -29,10 +29,16 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   await page.waitForFunction(()=>window.__arrivals.length===1);
   const first=await page.evaluate(()=>{const state=JSON.parse(localStorage.getItem('list-state')),hero=state.characters[0];return {result:__arrivals[0].result,count:__arrivals[0].animations.length,top:scrollY,hp:hero.hp,max:Rules.calculate(hero,Object.fromEntries(Object.values(CATALOG).flat().map(x=>[x.id,x]))).maxHp,stored:JSON.stringify(state),meter:document.querySelector('.meter>div').style.transform};});
   assert.equal(first.result,true);assert.equal(first.count,4);assert.equal(first.top,0);assert.equal(first.hp,first.max);
+  assert.equal(await page.evaluate(()=>Math.max(...__arrivals[0].animations.map(a=>a.effect.getTiming().delay+a.effect.getTiming().duration))),3500);
+  assert(await page.locator('#app').evaluate(el=>el.inert));
   // Freeze only the new one-shot animations to inspect the entrance midway.
   await page.evaluate(()=>{for(const a of __arrivals[0].animations){a.pause();a.currentTime=a.effect.getTiming().delay+a.effect.getTiming().duration*.4;}});
   await page.screenshot({path:out+'/'+design+'-arrival.png'});
+  const nav=await page.locator('.nav [data-tab="bag"]').boundingBox();await page.mouse.click(nav.x+nav.width/2,nav.y+nav.height/2);await page.keyboard.press('Enter');
+  assert(await page.locator('#character-arrival-guard').count(),'Accidental input does not cancel intro');
+  assert(await page.locator('#page-content').getAttribute('data-scene').then(x=>x.endsWith(':sheet')),'Input cannot switch tabs');
   await page.evaluate(async()=>{for(const a of __arrivals[0].animations)a.finish();await Promise.all(__arrivals[0].animations.map(a=>a.finished));});
+  await page.locator('#character-arrival-guard').waitFor({state:'detached'});assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);
   assert.equal(await page.evaluate(()=>JSON.stringify(JSON.parse(localStorage.getItem('list-state')))),first.stored,'Animation does not modify saved character');
   assert.equal(await page.locator('.meter>div').evaluate(el=>el.style.transform),first.meter);
   await page.locator('.nav [data-tab="bag"]').click();await page.locator('.nav [data-tab="sheet"]').click();assert.equal(await page.evaluate(()=>__arrivals.length),1,'Tab switches do not replay entrance');
@@ -40,14 +46,26 @@ const site=path.resolve(process.argv[2]||path.join(__dirname,'../site')),out=pat
   const lifecycle=await page.evaluate(async()=>{
    const scope=document.querySelector('#page-content'),finite=()=>scope.getAnimations({subtree:true}).filter(a=>a.effect.target.matches('.hero,.health-layout,.saves,.meter>div'));
    ListFeedback.configure({visual:false});const disabled=ListMotion.revealCharacter(scope);ListFeedback.configure({visual:true});
-   ListMotion.revealCharacter(scope);document.body.dispatchEvent(new Event('pointerdown',{bubbles:true}));await Promise.resolve();const interrupted=finite().length;
-   ListMotion.revealCharacter(scope);ListFeedback.configure({visual:false});await Promise.resolve();const switchedOff=finite().length;ListFeedback.configure({visual:true});
+   ListMotion.revealCharacter(scope);document.body.dispatchEvent(new Event('pointerdown',{bubbles:true,cancelable:true}));document.querySelector('.nav [data-tab="bag"]').click();
+   const blocked=!!document.querySelector('#character-arrival-guard')&&document.querySelector('#app').inert&&scope.dataset.scene.endsWith(':sheet');
+   ListFeedback.configure({visual:false});await Promise.resolve();const switchedOff=finite().length;const released=!document.querySelector('#character-arrival-guard')&&!document.querySelector('#app').inert;ListFeedback.configure({visual:true});
    ListMotion.revealCharacter(scope);ListMotion.renderApp(document.querySelector('#app'),document.querySelector('#app').innerHTML,scope.dataset.scene);await Promise.resolve();const redrawn=finite().length;
-   return {disabled,interrupted,switchedOff,redrawn};
-  });assert.deepEqual(lifecycle,{disabled:false,interrupted:0,switchedOff:0,redrawn:0});
-  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.evaluate(()=>ListMotion.revealCharacter(document.querySelector('#page-content'))),false);
-  await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>ListMotion.revealCharacter(document.querySelector('#page-content')));await page.locator('.nav [data-tab="catalog"]').click();assert.equal(await page.evaluate(()=>document.querySelector('#page-content').getAnimations({subtree:true}).filter(a=>a.effect.target.matches('.hero,.health-layout,.saves,.meter>div')).length),0);
-  assert.deepEqual(errors,[]);results.push({design,passed:true,created_and_saved:true,hp_unchanged:true,no_replay:true,reduced_motion:true,visual_preference:true,interruption:true,navigation:true,physical_device_tested:false});await context.close();
+   ListMotion.cancelCharacterReveal();
+   return {disabled,blocked,switchedOff,released,redrawn};
+  });assert.deepEqual(lifecycle,{disabled:false,blocked:true,switchedOff:0,released:true,redrawn:4});
+  await page.evaluate(()=>ListMotion.revealCharacter(document.querySelector('#page-content')));await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#character-arrival-guard').waitFor({state:'detached'});assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);
+  assert.equal(await page.evaluate(()=>ListMotion.revealCharacter(document.querySelector('#page-content'))),false);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{ListMotion.revealCharacter(document.querySelector('#page-content'));Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});});
+  assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);assert.equal(await page.locator('#character-arrival-guard').count(),0);
+  // Check natural completion on the actual clock, not just manual animation finish.
+  await page.evaluate(()=>{window.__introStarted=performance.now();ListMotion.revealCharacter(document.querySelector('#page-content'));});
+  await page.locator('#character-arrival-guard').waitFor({state:'detached',timeout:5000});
+  const elapsed=await page.evaluate(()=>performance.now()-__introStarted);assert(elapsed>=3400&&elapsed<4600,'Natural intro lasts about 3.5s');
+  assert.equal(await page.locator('#app').evaluate(el=>el.inert),false);
+  await page.locator('.nav [data-tab="catalog"]').click();await page.locator('#catalog-results').waitFor();
+  assert.deepEqual(errors,[]);results.push({design,passed:true,created_and_saved:true,hp_unchanged:true,no_replay:true,reduced_motion:true,visual_preference:true,duration_ms:3500,input_blocked_until_end:true,accidental_input_does_not_cancel:true,background_redraw_preserves_intro:true,unlocks_on_completion:true,unlocks_on_background:true,navigation_after_completion:true,physical_device_tested:false});await context.close();
  }
  fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2)+'\n');console.log(JSON.stringify(results));
  }finally{await browser.close();await new Promise(r=>server.close(r));}

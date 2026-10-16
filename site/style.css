@@ -288,3 +288,4 @@ html[data-native-app="true"] :is(input,textarea,[contenteditable]:not([contented
  -webkit-user-select:text;user-select:text;-webkit-touch-callout:default;
 }
 html[data-native-app="true"] img{-webkit-user-drag:none}
+#character-arrival-guard{position:fixed;inset:0;z-index:100;touch-action:none;background:transparent}
