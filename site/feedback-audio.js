@@ -1,7 +1,8 @@
 /* Offline, gesture-triggered game feedback. No music, requests or sound queue. */
 (function(root){'use strict';
 const key='list-feedback-v1',defaults={sound:true,volume:.3,haptics:true,visual:true};
-const kinds=new Set(['damage','heal','roll','critical-success','critical-failure','invalid']);
+const kinds=new Set(['damage','heal','roll','critical-success','critical-failure','invalid','equipment']);
+const lastMaterials=new Map();
 let preferences={...defaults},context=null,master=null,gestureAt=-Infinity,audioEpoch=0;
 const sampleBuffers=new WeakMap();
 const voices=new Set(),reduced=root.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -10,6 +11,16 @@ const ios=()=>/iPad|iPhone|iPod/.test(root.navigator?.userAgent||'')||root.navig
 const nativeHaptic=()=>typeof root.NativeBridge?.haptic==='function'||typeof root.webkit?.messageHandlers?.haptic?.postMessage==='function';
 function capabilities(){return{sound:typeof(root.AudioContext||root.webkitAudioContext)==='function',haptics:nativeHaptic()||!ios()&&typeof root.navigator?.vibrate==='function',visual:true,reducedMotion:!!reduced?.matches};}
 function prefs(){return{...preferences};}
+function equipmentMaterial(item={}){
+ const explicit=item.mechanics?.material?.type||item.material;
+ if(['metal','leather','cloth','wood','glass'].includes(explicit))return explicit;
+ const slug=String(item.slug||'');
+ if(item.category==='potion'||/potion|elixir|vial|flask|bottle/.test(slug))return 'glass';
+ if(/leather|hide-armor/.test(slug))return 'leather';
+ if(item.category==='unarmored'||/padded|clothing|robe|cloak|shirt|vestment/.test(slug))return 'cloth';
+ if(/wood|bow|staff|club|spear|sling/.test(slug))return 'wood';
+ return ['weapon','armor','shield'].includes(item.type)?'metal':'leather';
+}
 function configure(patch){for(const name of ['sound','haptics','visual'])if(typeof patch?.[name]==='boolean')preferences[name]=patch[name];if(Number.isFinite(patch?.volume))preferences.volume=Math.max(0,Math.min(1,patch.volume));try{root.localStorage.setItem(key,JSON.stringify(preferences));}catch{}if(master&&context)master.gain.setTargetAtTime(preferences.volume*.65,context.currentTime,.015);if(!preferences.sound||!preferences.volume)stopAudio();if(!preferences.haptics)cancelHaptic();if(!preferences.visual){root.ListFeedbackVisual?.clear?.();root.ListMotion?.cancelCharacterReveal?.();}return prefs();}
 const recentGesture=()=>!document.hidden&&(root.navigator?.userActivation?.isActive===true||Date.now()-gestureAt<180);
 function unlock(event){if(event?.isTrusted===true)gestureAt=Date.now();if(!recentGesture()||!preferences.sound||!preferences.volume||!capabilities().sound)return false;try{if(!context||context.state==='closed'){const Audio=root.AudioContext||root.webkitAudioContext;context=new Audio();master=context.createGain();master.gain.value=preferences.volume*.65;master.connect(context.destination);}if(context.state==='suspended'||context.state==='interrupted')context.resume()?.catch?.(()=>{});return true;}catch{return false;}}
@@ -17,6 +28,12 @@ function cancelHaptic(){try{if(!ios())root.navigator?.vibrate?.(0);}catch{}}
 function stopAudio(){audioEpoch++;for(const voice of [...voices])voice.stop();}
 function stop(){stopAudio();cancelHaptic();root.ListFeedbackVisual?.clear?.();}
 function selectSample(kind,detail={}){
+ if(kind==='equipment'){
+  const pool=(root.ListInteractionPools?.[detail.material]||[]).filter(id=>root.ListInteractionSamples?.[id]);
+  const choices=pool.filter(id=>id!==lastMaterials.get(detail.material));
+  const available=choices.length?choices:pool;
+  return available.length?available[Math.floor(Math.random()*available.length)]:null;
+ }
  if(kind==='critical-success')return 'S16';if(kind==='critical-failure')return 'F1';
  if(kind!=='damage'&&kind!=='heal')return null;
  const max=Number(detail.maxHp),given=Number(detail.damageAmount);
@@ -39,7 +56,7 @@ function rollLabel(degree,detail={}){
  return degree;
 }
 function sampled(ctx,output,id,when){
- const entry=root.ListFeedbackSamples?.[id];if(!entry)throw Error('Missing approved feedback sample '+id);
+ const entry=root.ListFeedbackSamples?.[id]||root.ListInteractionSamples?.[id];if(!entry)throw Error('Missing approved feedback sample '+id);
  let cache=sampleBuffers.get(ctx);if(!cache){cache=new Map();sampleBuffers.set(ctx,cache);}
  let buffer=cache.get(id);
  if(!buffer){const binary=root.atob(entry.pcm);buffer=ctx.createBuffer(1,entry.frames,entry.sampleRate);const data=buffer.getChannelData(0);
@@ -52,7 +69,7 @@ function sampled(ctx,output,id,when){
 }
 /* All envelopes start and end at silence, including the filtered crack. */
 function synth(ctx,output,kind,when=ctx.currentTime,detail={}){
- const id=selectSample(kind,detail);if(id)return sampled(ctx,output,id,when);
+ const id=detail.sample||selectSample(kind,detail);if(id)return sampled(ctx,output,id,when);
  const nodes=[],sources=[];let ended=0,finished=false;
  const record={stop(){if(finished)return;finished=true;for(const s of sources)try{s.stop();}catch{}for(const n of nodes)try{n.disconnect();}catch{}voices.delete(record);}};
  function node(n){nodes.push(n);return n;}
@@ -65,14 +82,14 @@ function synth(ctx,output,kind,when=ctx.currentTime,detail={}){
  }
  return record;
 }
-function play(kind,detail){if(!preferences.sound||!preferences.volume||!recentGesture()||!unlock())return false;const active=context,deadline=Date.now()+120,epoch=audioEpoch;function start(){if(epoch!==audioEpoch||active!==context||active.state!=='running'||document.hidden||Date.now()>deadline||!preferences.sound||!preferences.volume)return false;while(voices.size>=3)voices.values().next().value.stop();const voice=synth(active,master,kind,active.currentTime,detail);voices.add(voice);return true;}if(active.state==='running')return start();try{active.resume().then(start).catch(()=>{});}catch{}return false;}
-const patterns={damage:[22],heal:[9,45,12],roll:[7], 'critical-success':[12,55,18], 'critical-failure':[25,45,12],invalid:[9]};
-function haptic(kind){if(!preferences.haptics||!recentGesture()||!capabilities().haptics)return false;try{if(typeof root.NativeBridge?.haptic==='function')root.NativeBridge.haptic(kind);else if(root.webkit?.messageHandlers?.haptic)root.webkit.messageHandlers.haptic.postMessage({kind});else root.navigator.vibrate(patterns[kind]);return true;}catch{return false;}}
-function emit(kind,detail={}){if(['roll','critical-success','critical-failure'].includes(kind)){const degree=classifyRoll(detail)||(kind==='critical-success'?'Критический успех':kind==='critical-failure'?'Критический провал':'');detail={...detail,degree,label:rollLabel(degree,detail)};kind=degree==='Критический успех'?'critical-success':degree==='Критический провал'?'critical-failure':'roll';}if(!kinds.has(kind)||document.hidden)return{sound:false,haptics:false,visual:false};let visual=false;if(preferences.visual&&!detail.deferVisual)try{visual=root.ListFeedbackVisual?.emit?.(kind,detail)!==false&&!!root.ListFeedbackVisual;}catch{}const tactile=haptic(kind);let sound=false;try{sound=play(kind,detail);}catch{stopAudio();}return{sound,haptics:tactile,visual,sample:selectSample(kind,detail)};}
+function play(kind,detail){if(!preferences.sound||!preferences.volume||!recentGesture()||!unlock())return false;const active=context,deadline=Date.now()+120,epoch=audioEpoch;function start(){if(epoch!==audioEpoch||active!==context||active.state!=='running'||document.hidden||Date.now()>deadline||!preferences.sound||!preferences.volume)return false;if(kind==='equipment')for(const old of [...voices])if(old.materialCue)old.stop();while(voices.size>=3)voices.values().next().value.stop();const voice=synth(active,master,kind,active.currentTime,detail);voice.materialCue=kind==='equipment';if(voice.materialCue)lastMaterials.set(detail.material,detail.sample);voices.add(voice);return true;}if(active.state==='running')return start();try{active.resume().then(start).catch(()=>{});}catch{}return false;}
+const patterns={damage:[22],heal:[9,45,12],roll:[7], 'critical-success':[12,55,18], 'critical-failure':[25,45,12],invalid:[9],equipment:[8]};
+function haptic(kind){if(!preferences.haptics||!recentGesture()||!capabilities().haptics)return false;try{const nativeKind=kind==='equipment'?'roll':kind;if(typeof root.NativeBridge?.haptic==='function')root.NativeBridge.haptic(nativeKind);else if(root.webkit?.messageHandlers?.haptic)root.webkit.messageHandlers.haptic.postMessage({kind:nativeKind});else root.navigator.vibrate(patterns[kind]);return true;}catch{return false;}}
+function emit(kind,detail={}){if(['roll','critical-success','critical-failure'].includes(kind)){const degree=classifyRoll(detail)||(kind==='critical-success'?'Критический успех':kind==='critical-failure'?'Критический провал':'');detail={...detail,degree,label:rollLabel(degree,detail)};kind=degree==='Критический успех'?'critical-success':degree==='Критический провал'?'critical-failure':'roll';}if(!kinds.has(kind)||document.hidden)return{sound:false,haptics:false,visual:false};const sample=selectSample(kind,detail);if(kind==='equipment'&&!sample)return{sound:false,haptics:false,visual:false,sample:null};detail={...detail,sample};let visual=false;if(preferences.visual&&!detail.deferVisual)try{visual=root.ListFeedbackVisual?.emit?.(kind,detail)!==false&&!!root.ListFeedbackVisual;}catch{}const tactile=haptic(kind);let sound=false;try{sound=play(kind,detail);}catch{stopAudio();}return{sound,haptics:tactile,visual,sample};}
 function demo(kind,detail={}){return emit(kind,{...detail,preview:true});}
-function settingsHTML(){const p=prefs(),cap=capabilities(),row=(name,title,sub='')=>`<button class="setting-switch" data-action="feedback-toggle" data-key="${name}" role="switch" aria-checked="${p[name]}" ${name==='haptics'&&!cap.haptics?'disabled':''}><span><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span><span class="switch-track"><span></span></span></button>`;return row('sound','Звуки действий','Урон, лечение и броски')+`<div class="feedback-volume"><label for="feedback-volume">Громкость</label><input id="feedback-volume" type="range" min="0" max="100" step="1" value="${Math.round(p.volume*100)}" aria-label="Громкость звуков"><output for="feedback-volume">${Math.round(p.volume*100)}%</output></div>`+row('haptics','Вибрация',cap.haptics?'Короткий тактильный отклик':'Недоступна в этой среде')+row('visual','Визуальный отклик',cap.reducedMotion?'Упрощён с учётом настроек движения':'Подсветка здоровья и компаса');}
+function settingsHTML(){const p=prefs(),cap=capabilities(),row=(name,title,sub='')=>`<button class="setting-switch" data-action="feedback-toggle" data-key="${name}" role="switch" aria-checked="${p[name]}" ${name==='haptics'&&!cap.haptics?'disabled':''}><span><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span><span class="switch-track"><span></span></span></button>`;return row('sound','Звуки действий','Броски, здоровье и экипировка')+`<div class="feedback-volume"><label for="feedback-volume">Громкость</label><input id="feedback-volume" type="range" min="0" max="100" step="1" value="${Math.round(p.volume*100)}" aria-label="Громкость звуков"><output for="feedback-volume">${Math.round(p.volume*100)}%</output></div>`+row('haptics','Вибрация',cap.haptics?'Короткий тактильный отклик':'Недоступна в этой среде')+row('visual','Визуальный отклик',cap.reducedMotion?'Упрощён с учётом настроек движения':'Подсветка здоровья и компаса');}
 async function renderPreview(kind,detail={}){if(!kinds.has(kind))throw Error('Unknown feedback kind');const Offline=root.OfflineAudioContext||root.webkitOfflineAudioContext;if(!Offline)throw Error('Offline audio unavailable');const ctx=new Offline(1,96000,48000),gain=ctx.createGain();gain.gain.value=.3*.65;gain.connect(ctx.destination);synth(ctx,gain,kind,0,detail);return ctx.startRendering();}
 for(const event of ['pointerdown','keydown','click'])document.addEventListener(event,e=>{if(e.isTrusted&&!(event==='keydown'&&e.repeat))unlock(e);},{capture:true,passive:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){gestureAt=-Infinity;stopAudio();cancelHaptic();try{context?.suspend()?.catch?.(()=>{});}catch{}}});root.addEventListener('pagehide',()=>{gestureAt=-Infinity;stopAudio();cancelHaptic();try{context?.suspend()?.catch?.(()=>{});}catch{}});
-root.ListFeedback={prefs,configure,unlock,emit,stop,capabilities,demo,settingsHTML,renderPreview,selectSample,classifyRoll,rollLabel};
+root.ListFeedback={prefs,configure,unlock,emit,stop,capabilities,demo,settingsHTML,renderPreview,selectSample,classifyRoll,rollLabel,equipmentMaterial};
 })(window);

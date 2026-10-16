@@ -10,7 +10,7 @@ function setup(options={}){
  class Audio{constructor(){this.state=options.suspended?'suspended':'running';this.currentTime=0;this.sampleRate=48000;this.destination={};this.nodes=[];contexts.push(this);}createGain(){return new Node(this);}createOscillator(){return new Node(this,true);}createBufferSource(){return new Node(this,true);}createBiquadFilter(){return new Node(this);}createBuffer(ch,n){const data=new Float32Array(n);return{getChannelData:()=>data};}resume(){if(!options.slowResume)this.state='running';return options.slowResume?new Promise(resolve=>{this.completeResume=()=>{this.state='running';resolve();};}):Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}}
  if(options.audio!==false)w.AudioContext=Audio;
  if(options.storageFail)Object.defineProperty(w,'localStorage',{value:{getItem(){throw Error('blocked');},setItem(){throw Error('blocked');}}});else if(options.saved)w.localStorage.setItem('list-feedback-v1',options.saved);
- w.eval(fs.readFileSync(path.join(__dirname,'../site/feedback-samples.js'),'utf8'));w.eval(script);return{w,api:w.ListFeedback,contexts,vibrations,visual,clears,dom,gesture(){w.ListFeedback.unlock({isTrusted:true});},active(){return contexts.flatMap(c=>c.nodes).filter(n=>n.source&&n.started!==undefined&&!n.cancelled&&!n.disconnected);}};
+ w.eval(fs.readFileSync(path.join(__dirname,'../site/feedback-samples.js'),'utf8'));w.eval(fs.readFileSync(path.join(__dirname,'../site/interaction-samples.js'),'utf8'));w.eval(script);return{w,api:w.ListFeedback,contexts,vibrations,visual,clears,dom,gesture(){w.ListFeedback.unlock({isTrusted:true});},active(){return contexts.flatMap(c=>c.nodes).filter(n=>n.source&&n.started!==undefined&&!n.cancelled&&!n.disconnected);}};
 }
 test('preferences are defensive, clamped, persistent and copied',()=>{const e=setup({saved:JSON.stringify({sound:false,haptics:'yes',volume:8,visual:false})});assert.equal(e.api.prefs().volume,1);assert.equal(e.api.prefs().haptics,true);const p=e.api.prefs();p.sound=true;assert.equal(e.api.prefs().sound,false);e.api.configure({sound:true,volume:-1,haptics:false});assert.equal(e.api.prefs().volume,0);assert.equal(JSON.parse(e.w.localStorage.getItem('list-feedback-v1')).sound,true);e.dom.window.close();});
 test('missing audio, vibration and blocked storage preserve visual actions',()=>{const e=setup({audio:false,vibrate:false,storageFail:true});assert.equal(e.api.capabilities().sound,false);assert.equal(e.api.capabilities().haptics,false);assert.doesNotThrow(()=>e.api.configure({sound:false}));const result=e.api.emit('heal',{hpDelta:5});assert.equal(result.sound,false);assert.equal(result.visual,true);assert.equal(e.visual[0][1].hpDelta,5);e.dom.window.close();});
@@ -46,3 +46,25 @@ test('all dice maxima and minima trigger feedback; declared Pathfinder degree ta
 });
 
 test('backgrounding stops sound while preserving settled critical visuals',()=>{const e=setup();e.gesture();e.api.emit('critical-success',{degree:'Критический успех'});Object.defineProperty(e.w.document,'hidden',{value:true,configurable:true});e.w.document.dispatchEvent(new e.w.Event('visibilitychange'));assert.equal(e.active().length,0);assert.equal(e.clears.length,0);e.dom.window.close();});
+
+test('material cues choose all three approved variants without consecutive repeats',()=>{
+ const e=setup();e.gesture();
+ for(const material of ['metal','leather','cloth','wood']){
+  const heard=new Set();let last=null;
+  for(let i=0;i<12;i++){
+   e.w.Math.random=()=>i%3===2?.99:0;e.gesture();
+   const result=e.api.emit('equipment',{material,equipped:i%2===0});
+   assert.equal(result.sound,true);assert.notEqual(result.sample,last);assert.ok(result.sample.startsWith('equipment-'+material+'-'));
+   heard.add(result.sample);last=result.sample;
+  }
+  assert.equal(heard.size,3);
+ }
+ e.api.stop();assert.equal(e.active().length,0);e.dom.window.close();
+});
+test('unselected glass stays silent; materials and existing native haptics remain compatible',()=>{
+ const e=setup();e.gesture();assert.equal(e.api.emit('equipment',{material:'glass'}).sound,false);
+ for(const [slug,type,category,expected] of [['rapier','weapon','','metal'],['leather-armor','armor','light','leather'],['padded-armor','armor','light','cloth'],['wooden-shield','shield','','wood'],['healing-potion-minor','consumable','potion','glass']])assert.equal(e.api.equipmentMaterial({slug,type,category}),expected);
+ let native;e.w.NativeBridge={haptic:k=>native=k};e.gesture();e.api.emit('equipment',{material:'metal'});assert.equal(native,'roll');
+ e.api.configure({sound:false,haptics:false,visual:false});const muted=e.api.emit('equipment',{material:'wood'});assert.equal(muted.sound,false);assert.equal(muted.haptics,false);assert.equal(muted.visual,false);
+ e.dom.window.close();
+});

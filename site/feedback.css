@@ -1,5 +1,7 @@
 /* Short local card cues; no screen movement or layout animation. */
 :root{--feedback-heal:#24845a;--feedback-damage:#bd3545;--feedback-gold:#92702b}
+.interaction-feedback{position:relative;isolation:isolate}
+.interaction-feedback-shine{position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none;opacity:0;background:linear-gradient(115deg,transparent 10%,var(--feedback-gold) 52%,transparent 90%)}
 html[data-theme="dark"]{--feedback-heal:#87dfa8;--feedback-damage:#ff929b;--feedback-gold:#efcb83}
 .health-feedback{position:relative;isolation:isolate}
 .health-feedback-wash{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;opacity:0}

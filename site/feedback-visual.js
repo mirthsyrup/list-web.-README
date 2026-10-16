@@ -8,7 +8,7 @@ function finish(record){
  clearTimeout(record.timer);
  for(const node of record.nodes)node.remove();
  for(const animation of record.animations)animation.cancel();
- record.anchor.classList.remove('health-feedback');
+ record.anchor.classList.remove('health-feedback','interaction-feedback');
  if(owners.get(record.anchor)===record)owners.delete(record.anchor);
 }
 function beginRoll(){
@@ -125,6 +125,15 @@ function error(field,message){
  field.focus?.({preventScroll:true});
 }
 function emit(kind,detail={}){
+ if(kind==='equipment'){
+  if(quiet()||!detail.anchor?.isConnected)return false;
+  const record=own(detail.anchor,650);if(!record)return false;
+  record.anchor.classList.add('interaction-feedback');
+  const shine=node(record,'interaction-feedback-shine');
+  const animation=animate(record,shine,[{opacity:0},{opacity:detail.equipped?.4:.22,offset:.3},{opacity:0}],{duration:520,fill:'forwards'});
+  if(animation)animation.finished.catch(()=>{}).then(()=>finish(record));else finish(record);
+  return true;
+ }
  if(['damage','heal','health-damage','health-heal'].includes(kind))return health(kind,detail);
  if(['roll','critical-success','critical-failure'].includes(kind)){beginRoll();return roll(kind,detail);}
  if(kind==='invalid'){
