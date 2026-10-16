@@ -31,7 +31,7 @@ function patch(el,html,{movingRows=true,lists=true}={}){if(!el)return;if(sheetFo
 // Content stays visible. Ordinary updates never fade a page or result list.
 function list(el,html){if(!el||el.innerHTML===html)return;patch(el,html,{movingRows:false,lists:false});}
 function renderApp(el,html,scene){const t=template(html),old=el.querySelector('#page-content'),changed=old&&old.dataset.scene!==scene;if(characterReveal&&(changed||!el.contains(characterReveal.scope)))cancelCharacterReveal();if(changed)dispose(old);patch(el,t,{movingRows:!changed,lists:!changed});root.ListVial?.sync(el);root.ListPolish?.sync(el);}
-// A one-shot, seven-second introduction after creation. Saved values are final;
+// A one-shot, seven-second introduction after creation or level advancement. Saved values are final;
 // a transparent guard holds input until the animation has fully completed.
 let characterReveal=null;
 function cancelCharacterReveal(){
