@@ -51,6 +51,11 @@ def build(site: Path, output: Path, version: str):
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[\w.-]+)?", version):
         raise ValueError("Invalid release version")
     output.mkdir(parents=True, exist_ok=True)
+    # Stamp the release so preference migrations follow every future update.
+    index = site / "index.html"
+    html = re.sub(r'<meta name="list-version" content="[^"]*">', '', index.read_text())
+    html = html.replace('<head>', '<head><meta name="list-version" content="' + version + '">', 1)
+    index.write_text(html)
     files = sorted(path for path in site.rglob("*") if path.is_file())
     archive_path = output / f"list-site-{version}.zip"
     with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:

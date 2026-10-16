@@ -1,9 +1,9 @@
 (function(root){'use strict';
 const DESIGN_KEY='list-design',valid=value=>value==='modern'||value==='fantasy';
-let design='modern',theme='light';
+let design='fantasy',theme='light';
 try{
  const url=new URL(location.href),requested=url.searchParams.get('design');
- const saved=localStorage.getItem(DESIGN_KEY);design=valid(saved)?saved:'modern';
+ const saved=localStorage.getItem(DESIGN_KEY);design=valid(saved)?saved:'fantasy';
  if(valid(requested)){
   design=requested;localStorage.setItem(DESIGN_KEY,design);
   url.searchParams.delete('design');history.replaceState(null,'',url.href);

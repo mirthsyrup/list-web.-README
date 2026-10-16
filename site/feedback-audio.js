@@ -7,8 +7,8 @@ let preferences={...defaults},context=null,master=null,gestureAt=-Infinity,audio
 const sampleBuffers=new WeakMap();
 const voices=new Set(),reduced=root.matchMedia?.('(prefers-reduced-motion: reduce)');
 try{const saved=JSON.parse(root.localStorage.getItem(key)||'null');if(saved&&typeof saved==='object'){for(const name of ['sound','haptics','visual'])if(typeof saved[name]==='boolean')preferences[name]=saved[name];if(Number.isFinite(saved.volume))preferences.volume=Math.max(0,Math.min(1,saved.volume));}}catch{}
-// One-time upgrade: raise the existing volume once, then preserve later choices.
-try{if(root.localStorage.getItem('list-feedback-volume-2.9.15')!=='1'){preferences.volume=1;root.localStorage.setItem(key,JSON.stringify(preferences));root.localStorage.setItem('list-feedback-volume-2.9.15','1');}}catch{}
+// Reset once for each release; preserve the user's later changes within it.
+try{const version=document.querySelector('meta[name="list-version"]')?.content;if(version&&root.localStorage.getItem('list-feedback-volume-version')!==version){preferences.volume=1;root.localStorage.setItem(key,JSON.stringify(preferences));root.localStorage.setItem('list-feedback-volume-version',version);}}catch{}
 document.documentElement.toggleAttribute('data-feedback-paused',!preferences.visual);
 const ios=()=>/iPad|iPhone|iPod/.test(root.navigator?.userAgent||'')||root.navigator?.platform==='MacIntel'&&root.navigator?.maxTouchPoints>1;
 const nativeHaptic=()=>typeof root.NativeBridge?.haptic==='function'||typeof root.webkit?.messageHandlers?.haptic?.postMessage==='function';
