@@ -10,6 +10,24 @@ test('Normal trained Vigilante choice records no exception',()=>{const c=hero(3)
 test('Past slots require chronological selection and reject malformed save records',()=>{const c=hero(6);assert.throws(()=>R.takeFreeArchetype(c,4,vig.id,true,db),/Сначала/);c.freeArchetype.choices[3]={id:vig.id,override:true,reasons:[]};c.feats.push(vig.id);assert.throws(()=>R.validateCharacter(c),/архетипа/);});
 test('Second dedication warns until two actual archetype feats are owned',()=>{const c=hero(6);c.skills.deception=1;R.takeFreeArchetype(c,2,vig.id,false,db);c.attributes.int=2;const wizard=f('wizard-dedication');assert.ok(R.archetypeRequirements(c,wizard,db).reasons.some(t=>t.includes('ещё 2')));c.feats.push(f('safe-house').id,f('social-purview').id);assert.ok(!R.archetypeRequirements(c,wizard,db).reasons.some(t=>t.includes('ещё')));});
 test('Attribute requirements are checked without vague placeholder text',()=>{const c=hero(2);assert.ok(R.archetypeRequirements(c,f('wizard-dedication'),db).reasons.some(t=>t.includes('Интеллект')));});
+test('Social Purview waives only the Vigilante dedication lock for its granted choice',()=>{
+ const c=hero(4);c.skills.deception=1;c.attributes.int=2;c.feats=[vig.id,f('social-purview').id];
+ const set=R.classChoiceSets(c,db).find(x=>x.sourceId===f('social-purview').id),wizard=f('wizard-dedication');
+ assert.equal(R.featAvailability(c,wizard,db).ok,false);
+ assert.equal(R.buildChoiceAvailability(c,set.flag,wizard,db).ok,true);
+ assert.equal(R.buildChoiceAvailability(c,'unrelated',wizard,db).ok,false);
+ c.attributes.int=0;assert.equal(R.buildChoiceAvailability(c,set.flag,wizard,db).ok,false);
+ c.attributes.int=2;assert.equal(R.buildChoiceAvailability(c,set.flag,f('fighter-dedication'),db).ok,false);
+ const high=set.choices.map(x=>db[x.id]).find(x=>x.level>c.level);assert.ok(high);assert.equal(R.buildChoiceAvailability(c,set.flag,high,db).ok,false);
+ c.feats.push(f('rogue-dedication').id);assert.equal(R.buildChoiceAvailability(c,set.flag,wizard,db).ok,false);
+});
+test('Social Purview can finish a staged Free Archetype level and retains its granted dedication on reload',()=>{
+ const c=hero(3);c.skills.deception=1;c.skills.medicine=1;c.attributes.int=2;R.takeFreeArchetype(c,2,vig.id,false,db);
+ const original=JSON.stringify(c),draft=R.newLevel(c);draft.choices['Способность класса']=f('sudden-charge').id;draft.choices['Способность навыка']=f('battle-medicine').id;draft.choices[R.ARCTYPE]=f('social-purview').id;
+ let preview=R.previewLevel(c,draft,db);const set=preview.nested.find(x=>x.sourceId===f('social-purview').id);assert.ok(set);assert.ok(preview.missing.includes(set.sourceName));
+ draft.choiceOptions={[set.flag]:f('wizard-dedication').id};preview=R.previewLevel(c,draft,db);assert.deepEqual(preview.missing,[]);
+ const next=R.validateCharacter(JSON.parse(JSON.stringify(R.commitLevel(c,draft,db))));assert.equal(next.level,4);assert.equal(next.classChoices[set.flag],f('wizard-dedication').id);assert.ok(R.features(next,db).some(x=>x.id===f('wizard-dedication').id));assert.equal(next.freeArchetype.choices[4].id,f('social-purview').id);assert.equal(JSON.stringify(c),original);
+});
 test('Level preview cannot commit until the additional free slot is confirmed',()=>{const c=hero(1),draft=R.newLevel(c);draft.choices['Способность класса']=f('sudden-charge').id;draft.choices['Способность навыка']=f('assurance').id;let p=R.previewLevel(c,draft,db);assert.ok(p.missing.includes(R.ARCTYPE));draft.choices[R.ARCTYPE]=vig.id;assert.throws(()=>R.previewLevel(c,draft,db));draft.archetypeOverride=true;p=R.previewLevel(c,draft,db);assert.ok(!p.missing.includes(R.ARCTYPE));assert.equal(p.character.freeArchetype.choices[2].id,vig.id);assert.equal(c.level,1);assert.ok(!c.feats.includes(vig.id));});
 
 test('OR attribute prerequisites accept either attribute, not both',()=>{const c=hero(2);c.attributes.dex=2;c.attributes.str=0;const f1=f('exemplar-dedication');assert.ok(!R.archetypeRequirements(c,f1,db).reasons.some(t=>t.includes('Сила:')));c.attributes.dex=0;assert.ok(R.archetypeRequirements(c,f1,db).reasons.some(t=>t.includes(' или ')));});

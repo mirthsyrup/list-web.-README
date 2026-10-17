@@ -267,7 +267,7 @@ case 'backup':{const copies=Store.history();open('Резервные копии'
 case 'backup-now':Store.snapshot(S,'Сохранено вручную');close();toast('Резервная копия создана.');break;
 case 'backup-preview':{const restored=Store.restore(d.id);open('Восстановить копию?',note('В копии: '+restored.characters.length+' персонажей. Текущие листы будут заменены; их копия сохранится для отмены.'),btn('Отмена','close','','ghost')+btn('Восстановить','backup-apply',`data-id="${esc(d.id)}"`,'primary'),'backup-preview');break;}
 case 'backup-apply':{const restored=Store.restore(d.id);Store.snapshot(S,'До восстановления');S={...restored,dirty:true};save();close();render();toast('Копия восстановлена.');break;}
-case 'ability-view':abilityView=d.view==='usage'?'usage':'source';render();break;case 'about':open('Патфайндер 2: Лист персонажа · версия 2.9.19',`<p class="subtitle">Интерактивный лист персонажа на русском языке.</p><div class="rules-text">В справочнике 16 569 переведённых записей: классы, родословные, наследия, предыстории, способности, архетипы, заклинания, предметы и действия. Есть ремастер и материалы ранних изданий.
+case 'ability-view':abilityView=d.view==='usage'?'usage':'source';render();break;case 'about':open('Патфайндер 2: Лист персонажа · версия 2.9.20',`<p class="subtitle">Интерактивный лист персонажа на русском языке.</p><div class="rules-text">В справочнике 16 569 переведённых записей: классы, родословные, наследия, предыстории, способности, архетипы, заклинания, предметы и действия. Есть ремастер и материалы ранних изданий.
 
 Это не исчерпывающий архив всего изданного. 49 записей исходной базы без русского названия пропущены. Некоторые переводы неполны. Совпадение названий и совместимость ранних вариантов проверяй с ведущим.
 

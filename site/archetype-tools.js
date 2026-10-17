@@ -18,7 +18,7 @@ function install(R){
  R.archetypeOwned=(c,db)=>new Set(R.features(c,db).map(f=>f.id));
  const ded=id=>DATA.groups[DATA.members[id]]?.dedications.includes(id);
  R.isArchetype=f=>!!f&&(!!DATA.members[f.id]||f.tags?.includes('archetype'));
- function unmet(c,f,db,{free=false,other=false,facts=null,ignoreLevel=false}={}){
+ function unmet(c,f,db,{free=false,other=false,facts=null,ignoreLevel=false,dedicationSource=''}={}){
  const reasons=[],owned=facts?.owned||R.archetypeOwned(c,db),ranks=facts?.ranks||R.calculate(c,db).skillRanks;
  if(!ignoreLevel&&f.level>c.level)reasons.push('Нужен '+f.level+' уровень; сейчас '+c.level+'.');
  if(f.category!=='class'&&free)reasons.push('Бесплатный выбор предназначен для способности класса архетипа. Эта способность относится к другой категории.');
@@ -29,7 +29,7 @@ function install(R){
  for(const q of f.mechanics?.requirements||[])if(!ok(q))reasons.push('Требуется: '+label(q)+'.');
  if(ded(f.id)){
   const group=DATA.members[f.id];if(f.tags?.includes('multiclass')&&db[c.classId]?.slug===group)reasons.push('Нельзя взять мультиклассовое посвящение своего класса.');
-  for(const id of owned)if(ded(id)&&DATA.members[id]!==group){const g=DATA.members[id],count=[...owned].filter(x=>DATA.members[x]===g&&!ded(x)).length;if(count<2)reasons.push('Перед новым посвящением нужны ещё '+(2-count)+' способности архетипа «'+(db[id]?.name||g)+'».');}
+  for(const id of owned)if(ded(id)&&DATA.members[id]!==group){const g=DATA.members[id],social=g==='vigilante'&&db[dedicationSource]?.slug==='social-purview'&&owned.has(dedicationSource);if(social)continue;const count=[...owned].filter(x=>DATA.members[x]===g&&!ded(x)).length;if(count<2)reasons.push('Перед новым посвящением нужны ещё '+(2-count)+' способности архетипа «'+(db[id]?.name||g)+'».');}
  }else if(DATA.members[f.id]){const g=DATA.groups[DATA.members[f.id]];if(!g.dedications.some(id=>owned.has(id)))reasons.push('Сначала нужно посвящение: '+g.dedications.map(id=>db[id]?.name||'Посвящение архетипа').join(' или ')+'.');}
  if((f.mechanics?.unresolvedRequirements||0)>(DATA.parsedAttributeRequirements[f.id]||0))reasons.push('Проверь с мастером условия, которые лист не может проверить: '+(f.prereq||'см. описание способности')+'.');
  return [...new Set(reasons)];}

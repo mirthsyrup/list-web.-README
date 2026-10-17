@@ -158,6 +158,7 @@ if(typeof module!=='undefined')module.exports=R;root.Rules=R;
 R.buildChoiceAvailability=function(c,flag,f,db){
  const set=R.classChoiceSets(c,db).find(x=>x.flag===flag),ancient=db[set?.sourceId]?.slug==='ancient-elf'&&set?.rawFlag==='ancientElf';
  if(ancient&&f?.slug===db[c.classId]?.slug+'-dedication')return{ok:false,reason:'Выбери посвящение другого класса.'};
- return R.featAvailability(c,f,db,{ignoreLevel:ancient});
+ const social=db[set?.sourceId]?.slug==='social-purview'&&set?.rawFlag==='feat'&&set.choices.some(x=>x.id===f?.id)&&f?.tags?.includes('dedication');
+ return R.featAvailability(c,f,db,{ignoreLevel:ancient,dedicationSource:social?set.sourceId:''});
 };
 })(typeof window!=='undefined'?window:globalThis);
