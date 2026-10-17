@@ -333,4 +333,14 @@ html[data-design="fantasy"][data-theme] .health .btn[data-action="health"] {min-
 html[data-design="fantasy"][data-theme] .health .btn[data-action="health"]:before {content:'';display:block;width:54px;height:54px;flex:none;background-image:url("assets/metal-controls.png");background-repeat:no-repeat;background-size:394.7273% 131.6364%;background-position:40.2221% 50.5747%;pointer-events:none;}
 html[data-design="fantasy"][data-theme] .health .btn[data-mode="heal"]:before {background-position:3.7014% 50.5747%;}
 html[data-design="fantasy"][data-theme] .health .btn[data-action="health"]:active:before {filter:brightness(.86);}
-html[data-design="fantasy"][data-theme] .quick-button {min-height:50px;padding:12px 18px;border:0!important;border-image:none;border-radius:0;background:transparent url("assets/metal-controls.png") 96.415% 53.4884% / 252.4419% 190.5263% no-repeat!important;box-shadow:none;color:#fff4df!important;text-shadow:0 1px 2px #171611;justify-content:center;text-align:center;}
+/* Replace the complete old button skin; keep painted corners at a fixed size. */
+html[data-design="fantasy"][data-theme] .quick-grid>button.btn.quick-button {all:unset;box-sizing:border-box;appearance:none;position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:0 1 auto;min-width:0;max-width:100%;min-height:50px;padding:4px 8px;border:12px solid transparent!important;border-image:url("assets/steel-button.png") 200 fill / 12px / 0 round!important;background:none!important;box-shadow:none!important;border-radius:12px;color:#fff4df!important;font:inherit;font-size:12px;line-height:1.35;letter-spacing:normal;text-shadow:0 1px 2px #171611;text-align:center;white-space:normal;overflow-wrap:anywhere;cursor:pointer;}
+html[data-design="fantasy"][data-theme] .quick-grid>button.btn.quick-button:before,
+html[data-design="fantasy"][data-theme] .quick-grid>button.btn.quick-button:after {content:none!important;display:none!important;}
+html[data-design="fantasy"][data-theme] .quick-button .quick-name {min-width:0;white-space:normal;overflow-wrap:anywhere;}
+html[data-design="fantasy"][data-theme] .quick-button .action-cost {flex-shrink:0;}
+html[data-design="fantasy"][data-theme] .quick-grid>button.btn.quick-button:focus-visible {outline:2px solid #d8bf87;outline-offset:3px;}
+html[data-design="fantasy"][data-theme] .health .btn[data-action="health"]:before {opacity:.9;}
+html[data-design="fantasy"] :is(.art-boot,.art-shield,.art-eye,.art-die) {opacity:.8;}
+/* The adjacent book reaches into the heart's sprite cell at its left edge. */
+html[data-design="fantasy"] .art-heart {clip-path:inset(0 0 0 10%);}
