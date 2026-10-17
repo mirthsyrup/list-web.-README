@@ -11,6 +11,6 @@ function total(character,db){
  }
  return{value:hundredths/100,unknown,count};
 }
-function format(value){return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(value)+' Bulk';}
+function format(value){return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1}).format(value)+' Bulk';}
 const api={total,format};root.ListInventoryBulk=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
