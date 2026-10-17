@@ -63,6 +63,68 @@ def manifest_attributes(chunks, strings):
     return attributes
 
 
+def serialize_manifest(data, chunks, strings):
+    output = bytearray(data[:8])
+    for kind, header, raw in chunks:
+        if kind == 1:
+            payload, offsets = bytearray(), []
+            for string in strings:
+                offsets.append(len(payload))
+                encoded = string.encode('utf-16le')
+                payload += struct.pack('<H', len(encoded)//2)+encoded+b'\0\0'
+            payload += bytes(-len(payload)%4)
+            raw = raw[:header]+struct.pack('<'+'I'*len(offsets), *offsets)+payload
+            struct.pack_into('<I', raw, 4, len(raw))
+            struct.pack_into('<I', raw, 8, len(strings))
+            struct.pack_into('<I', raw, 20, header+4*len(offsets))
+        output += raw
+    struct.pack_into('<I', output, 4, len(output))
+    return bytes(output)
+
+
+def portrait_manifest(data):
+    chunks, strings = manifest_chunks(data)
+    before = manifest_attributes(chunks, strings)
+    namespace = strings.index('http://schemas.android.com/apk/res/android')
+    if 'screenOrientation' not in strings: strings.append('screenOrientation')
+    orientation = strings.index('screenOrientation')
+    mapping = next(raw for kind, _, raw in chunks if kind == 0x180)
+    resource_ids = list(struct.unpack('<'+'I'*((len(mapping)-8)//4), mapping[8:]))
+    resource_ids += [0]*(len(strings)-len(resource_ids))
+    resource_ids[orientation] = 0x0101001e
+    updated = []
+    for kind, header, raw in chunks:
+        if kind == 0x180:
+            raw = bytearray(struct.pack('<HHI', kind, header, 8+4*len(resource_ids))+struct.pack('<'+'I'*len(resource_ids), *resource_ids))
+        if kind == 0x102:
+            _, name, start, size, count = struct.unpack_from('<IIHHH', raw, header)
+            if strings[name] == 'activity':
+                assert size == 20
+                position = header+start
+                attrs = [bytearray(raw[position+i*size:position+(i+1)*size]) for i in range(count)]
+                existing = next((a for a in attrs if struct.unpack_from('<I', a, 4)[0] == orientation), None)
+                if existing is not None:
+                    struct.pack_into('<I', existing, 8, 0xffffffff)
+                    struct.pack_into('<HBBI', existing, 12, 8, 0, 16, 1)
+                else:
+                    attr = bytearray(struct.pack('<IIIHBBI', namespace, orientation, 0xffffffff, 8, 0, 16, 1))
+                    index = next((i for i,a in enumerate(attrs) if resource_ids[struct.unpack_from('<I',a,4)[0]] > 0x0101001e), count)
+                    attrs.insert(index, attr)
+                    for offset in (14,16,18):
+                        old = struct.unpack_from('<H', raw, header+offset)[0]
+                        if old and old >= index+1: struct.pack_into('<H', raw, header+offset, old+1)
+                    struct.pack_into('<H', raw, header+12, count+1)
+                raw = raw[:position]+b''.join(attrs)+raw[position+count*size:]
+                struct.pack_into('<I', raw, 4, len(raw))
+        updated.append((kind, header, raw))
+    result = serialize_manifest(data, updated, strings)
+    after = manifest_attributes(*manifest_chunks(result))
+    skip = lambda a: a[:2] == ('activity','screenOrientation')
+    assert [a for a in before if not skip(a)] == [a for a in after if not skip(a)]
+    assert all(a[3] == 1 for a in after if skip(a))
+    return result
+
+
 def update_manifest(data, version, build):
     chunks, strings = manifest_chunks(data)
     before = manifest_attributes(chunks, strings)
@@ -165,6 +227,9 @@ def prepare(platform, source, destination, site, version, build, ios_entry=None,
                     if data.decode().replace("</script", "<\\/script") not in parsed.scripts:
                         raise ValueError("iOS entry does not match site script " + name)
             info["CADisableMinimumFrameDurationOnPhone"] = True
+            info["UISupportedInterfaceOrientations"] = ["UIInterfaceOrientationPortrait"]
+            info["UISupportedInterfaceOrientations~ipad"] = ["UIInterfaceOrientationPortrait"]
+            info["UIRequiresFullScreen"] = True
             info["CFBundleShortVersionString"], info["CFBundleVersion"] = version, str(build)
             replacements[info_path] = plistlib.dumps(info, fmt=plistlib.FMT_XML, sort_keys=False)
             replacements[entry] = html
@@ -182,7 +247,7 @@ def prepare(platform, source, destination, site, version, build, ios_entry=None,
                     or zlib.adler32(dex[12:]) != struct.unpack_from("<I", dex, 8)[0]):
                 raise ValueError("Invalid or unpatched DEX")
             replacements["classes.dex"] = dex
-            replacements["AndroidManifest.xml"] = update_manifest(old.read("AndroidManifest.xml"), version, build)
+            replacements["AndroidManifest.xml"] = update_manifest(portrait_manifest(old.read("AndroidManifest.xml")), version, build)
             removed = [name for name in names if name.startswith(("META-INF/", "assets/web/"))]
             replacements.update({"assets/web/" + name: data for name, data in web.items()})
         else:
