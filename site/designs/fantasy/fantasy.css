@@ -344,3 +344,17 @@ html[data-design="fantasy"][data-theme] .health .btn[data-action="health"]:befor
 html[data-design="fantasy"] :is(.art-boot,.art-shield,.art-eye,.art-die) {opacity:.8;}
 /* The adjacent book reaches into the heart's sprite cell at its left edge. */
 html[data-design="fantasy"] .art-heart {clip-path:inset(0 0 0 10%);}
+/* Separate square viewports keep each updated drawing proportional and isolated. */
+html[data-design="fantasy"][data-theme] .fantasy-art:is(.art-backpack,.art-shield,.art-eye,.art-settings,.art-boot,.art-sword,.art-abilities,.art-skills) {background-image:url("assets/updated-icons.png")!important;background-repeat:no-repeat!important;background-color:transparent!important;box-sizing:border-box;padding:0;aspect-ratio:1;flex-shrink:0;}
+html[data-design="fantasy"][data-theme] .stat .fantasy-art:is(.art-shield,.art-eye,.art-boot,.art-skills) {width:28px;height:28px;right:2px;top:0;opacity:.8;}
+html[data-design="fantasy"][data-theme] .weapon-icon {display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;padding:0;}
+html[data-design="fantasy"][data-theme] .weapon-icon .fantasy-art {display:block;width:36px;height:36px;}
+html[data-design="fantasy"][data-theme] .topbar .art-settings {filter:drop-shadow(0 2px 1px #0007);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-backpack {background-size:393.03438% 196.51719%!important;background-position:0.89367% 2.02461%!important;clip-path:inset(4.91404% 7.35112% 4.91404% 7.35112%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-shield {background-size:364.96050% 182.48025%!important;background-position:32.60762% -3.25252%!important;clip-path:inset(4.94569% 17.08361% 4.94569% 17.08361%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-eye {background-size:386.32404% 193.16202%!important;background-position:67.72133% -0.02338%!important;clip-path:inset(5.68380% 4.92160% 5.68380% 4.92160%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-settings {background-size:417.92311% 208.96155%!important;background-position:99.68433% 2.11018%!important;clip-path:inset(5.94610% 4.88598% 5.94610% 4.88598%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-boot {background-size:396.97458% 198.48729%!important;background-position:-0.10851% 97.03263%!important;clip-path:inset(4.90960% 5.46903% 4.90960% 5.46903%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-sword {background-size:394.99466% 197.49733%!important;background-position:32.86637% 98.64346%!important;clip-path:inset(4.91183% 6.35910% 4.91183% 6.35910%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-abilities {background-size:394.99466% 197.49733%!important;background-position:66.86945% 98.18672%!important;clip-path:inset(4.91183% 4.91183% 4.91183% 4.91183%);}
+html[data-design="fantasy"][data-theme] .fantasy-art.art-skills {background-size:398.97445% 199.48723%!important;background-position:101.34049% 97.69871%!important;clip-path:inset(4.90734% 9.18046% 4.90734% 9.18046%);}
