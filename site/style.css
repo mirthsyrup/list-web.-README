@@ -289,3 +289,4 @@ html[data-native-app="true"] :is(input,textarea,[contenteditable]:not([contented
 }
 html[data-native-app="true"] img{-webkit-user-drag:none}
 #character-arrival-guard{position:fixed;inset:0;z-index:100;touch-action:none;background:transparent}
+.icon.info-icon{opacity:.55;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;fill:none}
