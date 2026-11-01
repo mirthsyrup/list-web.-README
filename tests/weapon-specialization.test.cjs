@@ -1,0 +1,8 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const R=require('../site/engine.js');require('../site/rules-v2.js');let classes;vm.runInNewContext(fs.readFileSync(require.resolve('../site/data/classes.js'),'utf8'),{window:{registerCatalog:(_name,data)=>{classes=data;}}});
+const psychic=classes.find(x=>x.slug==='psychic'),barbarian=classes.find(x=>x.slug==='barbarian');
+function damage(cls,features,rank,level){const c=R.create();c.classId=cls.id;c.level=level;c.attributes.str=0;c.overrides.ranks={simple:rank};const db={[cls.id]:cls,weapon:{id:'weapon',type:'weapon',tags:[],mechanics:{category:'simple',damage:{dice:1,die:'d6'}}}};for(const f of features)db[f.id]=f;return R.strike(c,{id:'weapon'},db).damageBonus;}
+const ps={id:'a58MGVX2L589sC9g',slug:'psychic-weapon-specialization',mechanics:{rules:[]}},common={id:'9EqIasqfI8YIM3Pt',slug:'weapon-specialization',mechanics:{rules:[]}},greater={id:'7JjhxMFo8DMwpGx0',slug:'greater-weapon-specialization-barbarian',mechanics:{rules:[]}};
+test('Psychic weapon specialization gives rank-based damage starting at level 13',()=>{assert.equal(damage(psychic,[ps],2,12),0);for(const rank of [2,3,4])assert.equal(damage(psychic,[ps],rank,13),rank);assert.equal(damage(psychic,[ps],1,13),0);});
+test('Barbarian greater specialization doubles the regular specialization',()=>{assert.equal(damage(barbarian,[common,greater],3,15),6);});
+test('Adding a second representation of specialization does not double its bonus',()=>{const copy={...psychic,mechanics:{...psychic.mechanics,items:{...psychic.mechanics.items,extra:{id:common.id,level:13}}}};assert.equal(damage(copy,[ps,common],2,13),2);});
