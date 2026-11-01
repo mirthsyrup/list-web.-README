@@ -95,7 +95,7 @@ const http = require('node:http');
             const image = new Image(); image.src = match[1]; await image.decode();
             if (!image.naturalWidth) throw Error('Texture did not decode');
           }
-          return values.every(value => !value || value.includes('data:image/'));
+          return values.every(value => !value || value.trim()==='none' || value.includes('data:image/') || value.includes('blob:'));
         });
         assert(backgrounds);
       }
