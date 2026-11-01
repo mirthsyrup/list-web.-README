@@ -114,6 +114,7 @@ R.calculate=function(c,db){const a=base.calculate(c,db),co=c.conditions||{},p=Ma
  a.speed=R.speedDetails(c,db).total;
  const key=c.magic?.key||c.key;a.spellDC+=c.attributes[key]-c.attributes[c.key]+delta(c,['spellDC'],[mod('status',-mental)]);
  a.spellAttack=c.attributes[key]+R.prof(c.level,a.ranks.spellcasting)+R.modifierTotal(c,['attack'],[mod('status',-mental)]);return a;};
+R.innateSpellStats=function(c,db){const a=R.calculate(c,db),rank=Math.max(1,a.ranks.spellcasting||0),mental=Math.max(c.conditions.frightened||0,c.conditions.sickened||0,c.conditions.stupefied||0),bonus=c.attributes.cha+R.prof(c.level,rank);return{rank,attack:bonus+R.modifierTotal(c,['attack'],[mod('status',-mental)]),dc:10+bonus+R.modifierTotal(c,['spellDC'],[mod('status',-mental)])+(c.overrides?.spellDC||0)};};
 R.strike=function(c,item,db){const s=base.strike(c,item,db),d=db[item.id],m=d?.mechanics||{},tags=d?.tags||[],ranged=!!m.range,stat=ranged?'dex':tags.includes('finesse')&&c.attributes.dex>c.attributes.str?'dex':'str',status=Math.max(c.conditions.frightened||0,c.conditions.sickened||0,stat==='dex'?c.conditions.clumsy||0:c.conditions.enfeebled||0),potency=Math.max(m.runes?.potency||0,item.potency||0);
  s.bonus+=delta(c,['attack'],[mod('status',-status),mod('circumstance',c.conditions.prone?-2:0),mod('item',potency)]);s.damageBonus+=delta(c,['damage'],[mod('status',!ranged||tags.includes('propulsive')||tags.some(t=>/^thrown(?:-|$)/.test(t))?-(c.conditions.enfeebled||0):0)]);
  // Propulsive applies the complete Strength penalty when Strength is negative.
