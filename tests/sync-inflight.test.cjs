@@ -9,14 +9,14 @@ const source=app.slice(start,end);
 function setup(local,remote,base={}){
  let release,startedResolve,version=1,first=true;
  const started=new Promise(resolve=>{startedResolve=resolve;}),gate=new Promise(resolve=>{release=resolve;});
- let server=structuredClone(remote),sent=[],saved=[];
+ let server=structuredClone(remote),sent=[],saved=[],messages=[];
  const ctx={S:{characters:structuredClone(local),synced:base,revision:0,dirty:true},cfg:{url:'https://example.test',token:'test',auto:false},syncBusy:false,syncTimer:null,
   R:{clone:x=>structuredClone(x),validateCharacter:x=>structuredClone(x),uid:(()=>{let i=0;return()=>`copy-${++i}`;})()},
   timedFetch:async(_url,opts)=>{if(opts.method!=='PUT')return{ok:true,json:async()=>({characters:structuredClone(server),revision:version})};
    const body=JSON.parse(opts.body);sent.push(structuredClone(body.characters));if(first){first=false;startedResolve();await gate;}
    server=structuredClone(body.characters);return{ok:true,json:async()=>({revision:++version})};},
-  save:()=>saved.push(structuredClone(ctx.S)),render:()=>{},toast:()=>{},setTimeout:()=>0,clearTimeout:()=>{},console};
- vm.createContext(ctx);vm.runInContext(source,ctx);return{ctx,started,release,sent,saved,getServer:()=>server};
+  save:()=>{saved.push(structuredClone(ctx.S));return true;},render:()=>{},toast:m=>messages.push(m),setTimeout:()=>0,clearTimeout:()=>{},console};
+ vm.createContext(ctx);vm.runInContext(source,ctx);return{ctx,started,release,sent,saved,messages,getServer:()=>server};
 }
 const character=(id,name)=>({id,name});
 test('editing while a sync is in flight preserves server-only characters on the next sync',async()=>{
@@ -41,3 +41,4 @@ test('a full library does not mark unseen server characters as deleted',async()=
  assert.equal(h.ctx.S.characters.length,100);assert.equal(h.ctx.S.synced.b,undefined);assert.equal(h.ctx.S.dirty,true);
  h.ctx.S.characters=h.ctx.S.characters.filter(c=>c.id!=='c');await h.ctx.sync();assert.ok(h.getServer().some(c=>c.id==='b'));
 });
+test('A failed local save after synchronization warns even during automatic sync',async()=>{const a=character('a','A'),h=setup([a],[a]);h.ctx.save=()=>false;const first=h.ctx.sync(false);await h.started;h.release();await first;assert.match(h.messages.at(-1),/не сохранены на устройстве/);assert.doesNotMatch(h.messages.at(-1),/Персонажи синхронизированы/);});
