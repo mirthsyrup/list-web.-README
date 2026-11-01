@@ -31,7 +31,7 @@ function migrate(storage,validate){
   store.snapshot(old.state,'Средневековая версия до объединения');
   state.active=current.state.characters.length?current.state.active:old.state.active;
   state.dirty=true;store.save(state);
-  if(storage.getItem('list-state')!==JSON.stringify(state))throw Error('Перенос не записан.');
+  if(JSON.stringify(store.decode(storage.getItem('list-state'),true).state)!==JSON.stringify(state))throw Error('Перенос не записан.');
  }
  // Existing simple-version preferences win; each site's theme stays independent.
  for(const key of SETTINGS){
