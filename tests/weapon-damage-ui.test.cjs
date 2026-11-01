@@ -1,0 +1,6 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const R=require('../site/engine.js');require('../site/rules-v2.js');
+const app=fs.readFileSync(require.resolve('../site/app.js'),'utf8'),line=app.split('\n').find(x=>x.startsWith("case 'weapon-damage':"));if(!line)throw Error('Weapon damage action not found');
+function run(str,roll){const c=R.create();c.attributes.str=str;c.inventory=[{uid:'w',id:'weapon',equipped:true}];const db={weapon:{id:'weapon',name:'Кинжал',type:'weapon',tags:[],mechanics:{category:'simple',damage:{dice:1,die:'d4'}}}};let output;const ctx={R,c,db,d:{uid:'w'},get:id=>db[id],change:fn=>fn(c),log:()=>{},result:(_label,total,detail)=>{output={total,detail};}};vm.createContext(ctx);vm.runInContext(`function run(){switch('weapon-damage'){${line}}}`,ctx);const old=R.roll;try{R.roll=()=>roll;ctx.run();}finally{R.roll=old;}return output;}
+test('A damaging weapon strike deals at least one damage even with a negative modifier',()=>{const result=run(-3,1);assert.equal(result.total,1);assert.match(result.detail,/1к4/);});
+test('A normal damaging strike retains its rolled result and modifier',()=>{assert.equal(run(2,3).total,5);});
