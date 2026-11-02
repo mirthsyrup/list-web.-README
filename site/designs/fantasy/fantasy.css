@@ -449,3 +449,10 @@ html[data-design="fantasy"][data-theme] .fantasy-art.art-item-mask {background-i
 html[data-design="fantasy"][data-theme] .fantasy-art.art-item-pickaxe {background-image:url("assets/semantic-equipment.webp")!important;background-size:414.57447% 386.48936%!important;background-position:35.03551% 98.84887%!important;clip-path:inset(5.00000% 5.95745% 5.00000% 5.95745%);}
 html[data-design="fantasy"][data-theme] .fantasy-art.art-item-bracelet {background-image:url("assets/semantic-equipment.webp")!important;background-size:441.16981% 411.28302%!important;background-position:66.22608% 96.75112%!important;clip-path:inset(18.75472% 5.00000% 18.75472% 5.00000%);}
 html[data-design="fantasy"][data-theme] .fantasy-art.art-item-quiver {background-image:url("assets/semantic-equipment.webp")!important;background-size:383.31148% 357.34426%!important;background-position:100.30668% 99.30564%!important;clip-path:inset(5.00000% 7.65574% 5.00000% 7.65574%);}
+
+/* Keep roll success marks distinct against the parchment in both palettes. */
+html[data-design="fantasy"][data-theme] .dice-result[data-feedback-degree="critical-success"]{--feedback-seal:#734710}
+html[data-design="fantasy"] .dice-result[data-feedback-degree] .result-seal{opacity:1;filter:drop-shadow(0 1px 0 #fff2bd)}
+html[data-design="fantasy"] .dice-result[data-feedback-degree] .result-seal svg{stroke-width:2.2}
+html[data-design="fantasy"] .feedback-seal-ring{border-width:2.5px}
+html[data-design="fantasy"][data-theme] .dice-result[data-feedback-degree="critical-success"]>b{color:#734710}

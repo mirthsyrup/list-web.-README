@@ -290,3 +290,10 @@ html[data-native-app="true"] :is(input,textarea,[contenteditable]:not([contented
 html[data-native-app="true"] img{-webkit-user-drag:none}
 #character-arrival-guard{position:fixed;inset:0;z-index:100;touch-action:none;background:transparent}
 .icon.info-icon{opacity:.55;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.bag-sort{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:4px 0 12px;font-size:13px;opacity:.8}.bag-sort select{max-width:65%;font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:5px;padding:5px 8px}
+
+/* The divider follows edge pulls independently of the header controls. */
+html[data-design="modern"] .topbar{border-bottom-color:transparent}
+html[data-design="modern"] .topbar::before{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--divider);pointer-events:none}
+html[data-design="modern"] .topbar::before,html[data-design="modern"] .topbar::after{translate:0 var(--edge-divider-y,0px);transition:translate 420ms cubic-bezier(.16,1,.3,1)}
+html[data-design="modern"] .topbar.edge-divider-pull::before,html[data-design="modern"] .topbar.edge-divider-pull::after{transition:none}
